@@ -6,7 +6,7 @@
 import piggyphoto, pygame
 import os
 import time
-from OSC import *   #required, to instll : sudo pip install python-osc
+from OSC import *   #required, to install : sudo pip install pyOSC
 
 
 def quit_pressed():
