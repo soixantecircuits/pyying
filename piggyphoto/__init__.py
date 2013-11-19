@@ -13,8 +13,16 @@ retries = 1
 # This is run if gp_camera_init returns -60 (Could not lock the device) and retries >= 1.
 unmount_cmd = 'gvfs-mount -s gphoto2'
 
+import sys
+
 #libgphoto2dll = 'libgphoto2.so.2.4.0'
-libgphoto2dll = 'libgphoto2.so'
+if sys.platform.startswith('linux'):
+    libgphoto2dll = 'libgphoto2.so'
+elif sys.platform.startswith('darwin'):
+    libgphoto2dll = 'libgphoto2.dylib'
+elif sys.platform.startswith('win32'):
+    libgphoto2dll = 'libgphoto2.so'
+
 # 2.4.6
 #libgphoto2dll = '/usr/lib/libgphoto2.so'
 # 2.4.8
