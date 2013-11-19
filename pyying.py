@@ -76,7 +76,7 @@ class Pyying:
               self.isShooting = False
               print 'Shoot!'
               fullpath = self.snap_path + self.snap_filename + ("%04d" % self.snap_number) + '.' + self.extension
-              self.camera.capture_image(fullpath)
+              self.camera.capture_image(fullpath, delete=True)
               self.snap_number+=1
 
             # Stream pictures
@@ -98,6 +98,7 @@ class Pyying:
     def close(self):
         self.oscServer.close()
         self.oscThread.join()
+        self.camera.leave_locked()
 
     def quit_pressed(self):
       if (not self.nowindow):

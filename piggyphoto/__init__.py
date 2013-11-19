@@ -8,7 +8,7 @@
 # Some functions return errors which can be fixed by retrying.
 # For example, capture_preview on Canon 550D fails the first time, but subsequent calls are OK.
 # Retries are performed on: camera.capture_preview, camera.capture_image and camera.init()
-retries = 1
+retries = 5
 
 # This is run if gp_camera_init returns -60 (Could not lock the device) and retries >= 1.
 unmount_cmd = 'gvfs-mount -s gphoto2'
@@ -293,7 +293,7 @@ class camera(object):
         check(gp.gp_camera_set_port_info(self._cam, info))
     port_info = property(_get_port_info, _set_port_info)
 
-    def capture_image(self, destpath = None):
+    def capture_image(self, destpath = None, delete = False):
         path = CameraFilePath()
 
         ans = 0
@@ -305,6 +305,8 @@ class camera(object):
 
         if destpath:
             self.download_file(path.folder, path.name, destpath)
+            if (delete):
+              check_unref(gp.gp_camera_file_delete(self._cam, path.folder, path.name, context), self)
         else:
             return (path.folder, path.name)
 
