@@ -34,8 +34,7 @@ brew install --HEAD smpeg
 brew install --universal libtool
 brew install --universal libusb
 brew install gphoto2 hg python sdl sdl_image sdl_mixer sdl_ttf portmidi 
-
-sudo pip install hg+http://bitbucket.org/pygame/pygame
+brew install pygame
 ```
 
 
