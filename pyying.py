@@ -6,6 +6,7 @@
 import piggyphoto, pygame
 import os
 import time
+import glob
 from OSC import *   #required, to install : sudo pip install pyOSC
 
 
@@ -43,11 +44,12 @@ class Pyying:
                 os.makedirs(self.path)
           if not os.path.exists(self.snap_path):
                 os.makedirs(self.snap_path)
+          self.find_last_number_in_directory()
 
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          fullpath = self.path + self.filename + str(self.number) + '.' + self.extension
+          fullpath = self.path + self.filename + ("%04d" % self.number) + '.' + self.extension
           self.camera.capture_preview(fullpath)
 
           # create window from first preview 
@@ -64,6 +66,7 @@ class Pyying:
         clock = pygame.time.Clock()
         try:
           while not self.quit_pressed():
+
             # trying to get a fixed fps. However the camera is limiting to approx 22 fps
             print str(clock.get_fps())
             clock.tick(25)
@@ -72,13 +75,13 @@ class Pyying:
             if (self.isShooting):
               self.isShooting = False
               print 'Shoot!'
-              fullpath = self.snap_path + self.snap_filename + str(self.snap_number) + self.extension
+              fullpath = self.snap_path + self.snap_filename + ("%04d" % self.snap_number) + '.' + self.extension
               self.camera.capture_image(fullpath)
               self.snap_number+=1
 
             # Stream pictures
             if (self.isStreaming):
-                fullpath = self.path + self.filename + str(self.number) + '.' + self.extension
+                fullpath = self.path + self.filename + ("%04d" % self.number) + '.' + self.extension
                 self.camera.capture_preview(fullpath)
                 self.show(fullpath)
                 self.number += 1
@@ -118,6 +121,17 @@ class Pyying:
         self.isShooting = True
         return
 
+    def find_last_number_in_directory(self):
+        fullpath = self.snap_path + self.snap_filename + '*.' + self.extension
+        files = sorted(glob.glob(fullpath))
+        if (len(files) > 0):
+          filename = files[-1]
+          regex = re.compile(r'\d\d\d\d')
+          number = regex.findall(filename)
+          if (len(number) > 0):
+            self.snap_number = int(number[0]) + 1
+
+        return
 
 
 
