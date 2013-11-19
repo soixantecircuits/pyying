@@ -1,16 +1,12 @@
 #to run a mjpeg server (like IP camera)
 # run $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 
-
-
 import piggyphoto, pygame
 import os
 import time
 import glob
 import getopt
 from OSC import *   #required, to install : sudo pip install pyOSC
-
-
 
 class Pyying:
     snap_path = 'snaps/'
@@ -142,27 +138,24 @@ class Pyying:
 
         return
 
-
-
-
 def main(argv):
   nowindow = False
 
   try:
     opts, args = getopt.getopt(argv,"hn",["nowindow"])
   except getopt.GetoptError:
-    print 'pyying.py --nowindow  # silent version'
+    print 'pyying.py -h to get help'
     sys.exit(2)
   for opt, arg in opts:
     if opt == '-h':
-      print 'test.py -i <inputfile> -o <outputfile>'
+      print 'press spacebar to take a snapshot'
+      print 'run "pyying.py --nowindow" for a x-less run'
       sys.exit()
     elif opt in ("-n", "--nowindow"):
         nowindow = True
 
   ying = Pyying(nowindow=nowindow)
   ying.start()
-
 
 if __name__ == '__main__':
 	main(sys.argv[1:])
