@@ -7,6 +7,7 @@ import piggyphoto, pygame
 import os
 import time
 import glob
+import getopt
 from OSC import *   #required, to install : sudo pip install pyOSC
 
 
@@ -23,12 +24,14 @@ class Pyying:
     oscServer = None
     oscThread = None
     main_surface = None
+    nowindow = False
 
     isStreaming = True
     isShooting = False
 
-    def __init__(self, host="0.0.0.0", port=6666):
-        
+    def __init__(self, host="0.0.0.0", port=6666, nowindow=False):
+        self.nowindow=nowindow
+
         # osc
         self.oscServer = OSCServer((host, int(port)))
         self.oscServer.addDefaultHandlers()
@@ -53,9 +56,10 @@ class Pyying:
           self.camera.capture_preview(fullpath)
 
           # create window from first preview 
-          picture = pygame.image.load(fullpath)
-          pygame.display.set_mode(picture.get_size())
-          self.main_surface = pygame.display.get_surface()
+          if (not self.nowindow):
+            picture = pygame.image.load(fullpath)
+            pygame.display.set_mode(picture.get_size())
+            self.main_surface = pygame.display.get_surface()
         except KeyboardInterrupt:
           self.close()
         except Exception as e:
@@ -81,9 +85,10 @@ class Pyying:
 
             # Stream pictures
             if (self.isStreaming):
-                fullpath = self.path + self.filename + ("%04d" % self.number) + '.' + self.extension
+                fullpath = self.path + self.filename + str(self.number) + '.' + self.extension
                 self.camera.capture_preview(fullpath)
-                self.show(fullpath)
+                if (not self.nowindow):
+                  self.show(fullpath)
                 self.number += 1
           self.close()
 
@@ -99,18 +104,22 @@ class Pyying:
         self.oscThread.join()
 
     def quit_pressed(self):
+      if (not self.nowindow):
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 return True
             if event.type == pygame.KEYDOWN :
               if event.key == pygame.K_SPACE :
                 self.isShooting = True
-        return False
+      return False
 
     def show(self,file):
-        picture = pygame.image.load(file)
-        self.main_surface.blit(picture, (0, 0))
-        pygame.display.flip()
+        try:
+          picture = pygame.image.load(file)
+          self.main_surface.blit(picture, (0, 0))
+          pygame.display.flip()
+        except Exception as e:
+          print str(e) 
 
     def stream_handler(self, addr, tags, data, client):
         print "Stream: " + str(data) + " is that " + str(True) + " ?"
@@ -136,10 +145,24 @@ class Pyying:
 
 
 
-def main(script, host="0.0.0.0", port=6666):
-    ying = Pyying(host, port)
-    ying.start()
+def main(argv):
+  nowindow = False
+
+  try:
+    opts, args = getopt.getopt(argv,"hn",["nowindow"])
+  except getopt.GetoptError:
+    print 'pyying.py --nowindow  # silent version'
+    sys.exit(2)
+  for opt, arg in opts:
+    if opt == '-h':
+      print 'test.py -i <inputfile> -o <outputfile>'
+      sys.exit()
+    elif opt in ("-n", "--nowindow"):
+        nowindow = True
+
+  ying = Pyying(nowindow=nowindow)
+  ying.start()
 
 
 if __name__ == '__main__':
-	main(*sys.argv)
+	main(sys.argv[1:])
