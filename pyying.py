@@ -13,6 +13,10 @@ def quit_pressed():
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             return True
+        if event.type == pygame.KEYDOWN :
+          if event.key == pygame.K_SPACE :
+            global isShooting
+            isShooting = True
     return False
 
 def show(file):
@@ -50,8 +54,11 @@ path = '/tmp/stream/'
 filename = 'preview'
 extension = 'jpg'
 number = 0
+snap_path = 'snaps/'
 snap_number = 0
 fullpath = path + filename + str(number) + '.' + extension
+if not os.path.exists(path):
+      os.makedirs(path)
 
 clock = pygame.time.Clock()
 try:
@@ -72,7 +79,8 @@ try:
     clock.tick(25)
     if (isShooting):
       isShooting = False
-      C.capture_image('snap' + str(snap_number) + '.jpg')
+      print "Shoot"
+      C.capture_image(snap_path + 'snap' + str(snap_number) + '.jpg')
       snap_number+=1
     if (isStreaming):
         fullpath = path + filename + str(number) + '.' + extension

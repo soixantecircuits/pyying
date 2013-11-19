@@ -14,7 +14,6 @@ mkdir python/soixante
 cd python/soixante
 git clone git@github.com:soixantecircuits/pyying.git
 cd pyying
-mkdir /tmp/stream
 python pyying.py
 ```
 
@@ -33,11 +32,6 @@ sudo make install
 
 Run
 ---
-
-Create temp dir:
-```
-$ mkdir /tmp/stream
-```
 
 Run pyying
 ```
