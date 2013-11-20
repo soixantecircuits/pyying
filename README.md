@@ -1,11 +1,13 @@
-#Pying
+#Pyying
 
 Simple application that turn a camera into an IP camera, and takes pictures with OSC command.
 
 
-#Install pyying
+##Install pyying
 
-##On a MAC (Maverick)
+###On a MAC (Maverick)
+
+*Does not work...*
 
 You need (brew)[http://brew.sh/] or copy paste :
 `ruby -e "$(curl -fsSL https://raw.github.com/mxcl/homebrew/go)"`
@@ -37,8 +39,10 @@ brew install gphoto2 hg python sdl sdl_image sdl_mixer sdl_ttf portmidi
 brew install pygame
 ```
 
+_Usefull for gdb : http://panks.me/blog/2013/11/install-gdb-on-os-x-mavericks-from-source/_
 
-##On Linux
+
+###On Linux
 
 ```
 sudo apt-get install python-pygame python-pip gphoto2 libgphoto2-2-dev libgphoto2-port0
@@ -52,8 +56,6 @@ git clone git@github.com:soixantecircuits/pyying.git
 cd pyying
 python pyying.py
 ```
-
-_Usefull for gdb : http://panks.me/blog/2013/11/install-gdb-on-os-x-mavericks-from-source/_
 
 ##Install mjpg-streamer
 
