@@ -33,9 +33,12 @@ elif sys.platform.startswith('win32'):
 import re
 import ctypes
 gp = ctypes.CDLL(libgphoto2dll)
-#context = gp.gp_context_new()
-gp.gp_context_new.restype = ctypes.c_void_p
-context = ctypes.c_void_p(gp.gp_context_new())
+
+if sys.platform.startswith('linux'):
+    context = gp.gp_context_new()
+elif sys.platform.startswith('darwin'):
+    gp.gp_context_new.restype = ctypes.c_void_p
+    context = ctypes.c_void_p(gp.gp_context_new())
 
 def library_version(verbose = True):
     gp.gp_library_version.restype = ctypes.POINTER(ctypes.c_char_p)
