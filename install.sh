@@ -7,7 +7,7 @@ mkdir python/soixante
 cd python/soixante
 git clone git@github.com:soixantecircuits/pyying.git
 cd ~/sources
-sudo apt-get install libjpeg62-dev subversion
+sudo apt-get install libjpeg62-dev imagemagick subversion
 svn co https://svn.code.sf.net/p/mjpg-streamer/code/mjpg-streamer
 cd mjpg-streamer
 make
