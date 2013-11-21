@@ -68,7 +68,7 @@ class Pyying:
           while not self.quit_pressed():
 
             # trying to get a fixed fps. However the camera is limiting to approx 22 fps
-            print str(clock.get_fps())
+            #print str(clock.get_fps())
             clock.tick(25)
             
             # Shoot picture

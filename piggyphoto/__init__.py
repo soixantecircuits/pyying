@@ -323,6 +323,7 @@ class camera(object):
 
         if destpath:
             cfile.save(destpath)
+            cfile.__dealoc__()
         else:
             return cfile
 
@@ -395,7 +396,7 @@ class cameraFile(object):
     def copy(self, source):
         check(gp.gp_file_copy(self._cf, source._cf))
 
-    def __dealoc__(self, filename):
+    def __dealoc__(self):
         check(gp.gp_file_free(self._cf))
 
     def _get_name(self):
