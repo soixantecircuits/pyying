@@ -48,7 +48,7 @@ class Pyying:
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          fullpath = self.path + self.filename + ("%04d" % self.number) + '.' + self.extension
+          fullpath = self.path + self.filename + ("%05d" % self.number) + '.' + self.extension
           self.camera.capture_preview(fullpath)
 
           # create window from first preview 
@@ -75,7 +75,7 @@ class Pyying:
             if (self.isShooting):
               self.isShooting = False
               print 'Shoot!'
-              fullpath = self.snap_path + self.snap_filename + ("%04d" % self.snap_number) + '.' + self.extension
+              fullpath = self.snap_path + self.snap_filename + ("%05d" % self.snap_number) + '.' + self.extension
               self.camera.capture_image(fullpath, delete=True)
               self.snap_number+=1
 
@@ -132,7 +132,7 @@ class Pyying:
         files = sorted(glob.glob(fullpath))
         if (len(files) > 0):
           filename = files[-1]
-          regex = re.compile(r'\d\d\d\d')
+          regex = re.compile(r'\d\d\d\d\d')
           number = regex.findall(filename)
           if (len(number) > 0):
             self.snap_number = int(number[0]) + 1
