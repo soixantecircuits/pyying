@@ -6,6 +6,7 @@ import os
 import time
 import glob
 import getopt
+import signal
 from OSC import *   #required, to install : sudo pip install pyOSC
 
 class Pyying:
@@ -16,7 +17,7 @@ class Pyying:
     extension = 'jpg'
     number = 0
     snap_number = 0
-    
+
     oscServer = None
     oscThread = None
     main_surface = None
@@ -51,7 +52,7 @@ class Pyying:
           fullpath = self.path + self.filename + ("%05d" % self.number) + '.' + self.extension
           self.camera.capture_preview(fullpath)
 
-          # create window from first preview 
+          # create window from first preview
           if (not self.nowindow):
             picture = pygame.image.load(fullpath)
             pygame.display.set_mode(picture.get_size())
@@ -59,7 +60,7 @@ class Pyying:
         except KeyboardInterrupt:
           self.close()
         except Exception as e:
-          print str(e) 
+          print str(e)
           self.close()
 
     def start(self):
@@ -70,7 +71,7 @@ class Pyying:
             # trying to get a fixed fps. However the camera is limiting to approx 22 fps
             #print str(clock.get_fps())
             clock.tick(25)
-            
+
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False
@@ -91,7 +92,7 @@ class Pyying:
         except KeyboardInterrupt:
           self.close()
         except Exception as e:
-          print str(e) 
+          print str(e)
           self.close()
 
 
@@ -116,7 +117,7 @@ class Pyying:
           self.main_surface.blit(picture, (0, 0))
           pygame.display.flip()
         except Exception as e:
-          print str(e) 
+          print str(e)
 
     def stream_handler(self, addr, tags, data, client):
         print "Stream: " + str(data) + " is that " + str(True) + " ?"
