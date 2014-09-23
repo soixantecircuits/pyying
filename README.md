@@ -33,13 +33,17 @@ sudo make install
 Run
 ---
 
-Run pyying
+You can run pyying and mjpeg_streamer in the same time by typing:
+```
+$ sh run.sh
+```
+
+Or you can separately run pyying
 ```
 $ cd ~/sources/python/soixante/pyying
 $ python pyying.py
 ```
-
-In another window, run mjpg-streamer
+and, in another window, run mjpg-streamer
 ```
 $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o     "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 ```
