@@ -10,7 +10,7 @@ import signal
 from OSC import *   #required, to install : sudo pip install pyOSC
 
 class Pyying:
-    snap_path = 'snaps/'
+    snap_path = os.path.dirname(__file__) + '/snaps/'
     snap_filename = 'snap'
     path = '/tmp/stream/'
     filename = 'preview'
