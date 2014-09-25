@@ -1,5 +1,5 @@
 sudo apt-get install libjpeg62-dev imagemagick subversion
-sudo apt-get install python-pygame python-pip gphoto2 libgphoto2-2-dev libgphoto2-port0
+sudo apt-get install python-pygame python-pip gphoto2 libgphoto2-2-dev libgphoto2-port10
 # sudo pip install --allow-unverified pyOSC
 
 cd ../
