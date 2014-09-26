@@ -6,9 +6,9 @@ import logging
 logging.basicConfig(level=logging.DEBUG) # debug only
 
 import threading
-
 import piggyphoto, pygame
 import os
+import sys
 import time
 import glob
 import getopt
@@ -32,7 +32,9 @@ class Pyying():
     isShooting = False
 
     def __init__(self, host="127.0.0.1", port=8010, nowindow=False):
-        self.nowindow=nowindow
+        self.nowindow = nowindow
+        self.host = host
+        self.port = port
 
         # socket.io
         self.thread_socket = threading.Thread(None, self.socket_handler, None)
@@ -98,16 +100,15 @@ class Pyying():
           self.close()
 
     def socket_handler(self):
-      socket = SocketIO(addr, port)
-      socket.on('shoot', self.pong)
-      socket.wait()
+      self.socket = SocketIO(self.host, self.port)
+      self.socket.on('shoot', self.pong)
+      self.socket.wait()
 
     def pong(data):
       print 'pong'
 
     def close(self):
-        self.thread_socket.stop()
-        self.thread_socket.join()
+        self.thread_socket._Thread__stop()
         self.camera.leave_locked()
 
     def quit_pressed(self):
