@@ -1,15 +1,20 @@
 #to run a mjpeg server (like IP camera)
 # run $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 
+from socketIO_client import SocketIO #required, to install : sudo pip install -U socketIO-client
+import logging
+logging.basicConfig(level=logging.DEBUG) # debug only
+
+import threading
+
 import piggyphoto, pygame
 import os
 import time
 import glob
 import getopt
 import signal
-from OSC import *   #required, to install : sudo pip install pyOSC
 
-class Pyying:
+class Pyying():
     snap_path = os.path.dirname(__file__) + '/snaps/'
     snap_filename = 'snap'
     path = '/tmp/stream/'
@@ -26,17 +31,12 @@ class Pyying:
     isStreaming = True
     isShooting = False
 
-    def __init__(self, host="0.0.0.0", port=6666, nowindow=False):
+    def __init__(self, host="127.0.0.1", port=8010, nowindow=False):
         self.nowindow=nowindow
 
-        # osc
-        self.oscServer = OSCServer((host, int(port)))
-        self.oscServer.addDefaultHandlers()
-        self.oscServer.addMsgHandler("/pyying/stream", self.stream_handler)
-        self.oscServer.addMsgHandler("/pyying/shoot", self.shoot_handler)
-        self.oscThread = threading.Thread(target=self.oscServer.serve_forever)
-        self.oscThread.start()
-        print "Starting OSCServer. Use ctrl-C to quit."
+        # socket.io
+        self.thread_socket = threading.Thread(None, self.socket_handler, None)
+        print "Starting. Use ctrl-C to quit."
 
         try:
           # check folders exist
@@ -64,12 +64,13 @@ class Pyying:
           self.close()
 
     def start(self):
+        self.thread_socket.start()
         clock = pygame.time.Clock()
         try:
           while not self.quit_pressed():
 
             # trying to get a fixed fps. However the camera is limiting to approx 22 fps
-            #print str(clock.get_fps())
+            # print str(clock.get_fps())
             clock.tick(25)
 
             # Shoot picture
@@ -87,6 +88,7 @@ class Pyying:
                 if (not self.nowindow):
                   self.show(fullpath)
                 self.number += 1
+
           self.close()
 
         except KeyboardInterrupt:
@@ -95,10 +97,17 @@ class Pyying:
           print str(e)
           self.close()
 
+    def socket_handler(self):
+      socket = SocketIO(addr, port)
+      socket.on('shoot', self.pong)
+      socket.wait()
+
+    def pong(data):
+      print 'pong'
 
     def close(self):
-        self.oscServer.close()
-        self.oscThread.join()
+        self.thread_socket.stop()
+        self.thread_socket.join()
         self.camera.leave_locked()
 
     def quit_pressed(self):
@@ -124,7 +133,7 @@ class Pyying:
         self.isStreaming = data
         return
 
-    def shoot_handler(self, addr, tags, data, client):
+    def shoot_handler(self):
         self.isShooting = True
         return
 
@@ -139,6 +148,7 @@ class Pyying:
             self.snap_number = int(number[0]) + 1
 
         return
+
 
 def main(argv):
   nowindow = False
