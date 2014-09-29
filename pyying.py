@@ -13,9 +13,10 @@ import time
 import glob
 import getopt
 import signal
+import re
 
 class Pyying():
-    snap_path = os.path.dirname(__file__) + '/snaps/'
+    snap_path = '/tmp/snaps/'
     snap_filename = 'snap'
     path = '/tmp/stream/'
     filename = 'preview'
