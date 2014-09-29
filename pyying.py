@@ -14,6 +14,7 @@ import glob
 import getopt
 import signal
 import re
+import signal
 
 class Pyying():
     snap_path = '/tmp/snaps/'
@@ -31,6 +32,7 @@ class Pyying():
 
     isStreaming = True
     isShooting = False
+    isClosing = False
 
     def __init__(self, host="127.0.0.1", port=8010, nowindow=False):
         self.nowindow = nowindow
@@ -40,6 +42,9 @@ class Pyying():
         # socket.io
         self.thread_socket = threading.Thread(None, self.socket_handler, None)
         print "Starting. Use ctrl-C to quit."
+
+	# TERM
+        signal.signal(signal.SIGTERM, self.sigclose)
 
         try:
           # check folders exist
@@ -103,14 +108,21 @@ class Pyying():
     def socket_handler(self):
       self.socket = SocketIO(self.host, self.port)
       self.socket.on('shoot', self.pong)
-      self.socket.wait()
+      while (self.isClosing == False):
+        self.socket.wait(5)
+      print "thread closed"
 
     def pong(data):
       print 'pong'
 
+    def sigclose(self, signum, frame):
+      self.isClosing = True
+
     def close(self):
-        self.thread_socket._Thread__stop()
+        #self.thread_socket._Thread__stop()
+        self.isClosing = True
         self.camera.leave_locked()
+        print "Have a good day!"
 
     def quit_pressed(self):
       if (not self.nowindow):
@@ -120,7 +132,7 @@ class Pyying():
             if event.type == pygame.KEYDOWN :
               if event.key == pygame.K_SPACE :
                 self.isShooting = True
-      return False
+      return self.isClosing
 
     def show(self,file):
         try:
