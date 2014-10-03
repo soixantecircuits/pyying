@@ -17,7 +17,7 @@ import re
 import signal
 
 class Pyying():
-    snap_path = '/tmp/snaps/'
+    snap_path = '/var/www/html/pyying/snaps/' # Don't forget to $ chown `whoami` this folder
     snap_filename = 'snap'
     path = '/tmp/stream/'
     filename = 'preview'
@@ -34,7 +34,7 @@ class Pyying():
     isShooting = False
     isClosing = False
 
-    def __init__(self, host="127.0.0.1", port=8010, nowindow=False):
+    def __init__(self, host="caribou.local", port=8011, nowindow=False):
         self.nowindow = nowindow
         self.host = host
         self.port = port
@@ -112,8 +112,8 @@ class Pyying():
         self.socket.wait(5)
       print "thread closed"
 
-    def pong(data):
-      print 'pong'
+    def pong(self):
+      self.shoot_handler()
 
     def sigclose(self, signum, frame):
       self.isClosing = True
