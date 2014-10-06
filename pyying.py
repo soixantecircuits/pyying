@@ -1,9 +1,6 @@
 #to run a mjpeg server (like IP camera)
 # run $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 
-from socketIO_client import SocketIO #required, to install : sudo pip install -U socketIO-client
-import logging
-logging.basicConfig(level=logging.DEBUG) # debug only
 
 import threading
 import piggyphoto, pygame
@@ -15,6 +12,7 @@ import getopt
 import signal
 import re
 import signal
+from OSC import * #required, to install : sudo pip install pyOSC
 
 class Pyying():
     snap_path = '/var/www/html/pyying/snaps/' # Don't forget to $ chown `whoami` this folder
@@ -34,16 +32,22 @@ class Pyying():
     isShooting = False
     isClosing = False
 
-    def __init__(self, host="caribou.local", port=8011, nowindow=False):
+    def __init__(self, host="localhost", port=8011, nowindow=False):
         self.nowindow = nowindow
         self.host = host
         self.port = port
 
-        # socket.io
-        self.thread_socket = threading.Thread(None, self.socket_handler, None)
-        print "Starting. Use ctrl-C to quit."
+        # osc
+        self.oscServer = OSCServer((host, int(port)))
+        self.oscServer.addDefaultHandlers()
+        self.oscServer.addMsgHandler("/pyying/stream", self.stream_handler)
+        self.oscServer.addMsgHandler("/pyying/shoot", self.shoot_handler)
+        self.oscThread = threading.Thread(target=self.oscServer.serve_forever)
+        self.oscThread.start()
+        print "Starting OSCServer. Use ctrl-C to quit."
 
-	# TERM
+
+        # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
 
         try:
@@ -72,7 +76,6 @@ class Pyying():
           self.close()
 
     def start(self):
-        self.thread_socket.start()
         clock = pygame.time.Clock()
         try:
           while not self.quit_pressed():
@@ -105,22 +108,14 @@ class Pyying():
           print str(e)
           self.close()
 
-    def socket_handler(self):
-      self.socket = SocketIO(self.host, self.port)
-      self.socket.on('shoot', self.pong)
-      while (self.isClosing == False):
-        self.socket.wait(5)
-      print "thread closed"
-
-    def pong(self):
-      self.shoot_handler()
 
     def sigclose(self, signum, frame):
       self.isClosing = True
 
     def close(self):
-        #self.thread_socket._Thread__stop()
         self.isClosing = True
+        self.oscServer.close()
+        self.oscThread.join()
         self.camera.leave_locked()
         print "Have a good day!"
 
@@ -147,7 +142,7 @@ class Pyying():
         self.isStreaming = data
         return
 
-    def shoot_handler(self):
+    def shoot_handler(self, addr, tags, data, client):
         self.isShooting = True
         return
 
