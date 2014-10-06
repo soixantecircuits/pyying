@@ -220,6 +220,7 @@ class camera(object):
         ans = 0
         for i in range(1 + retries):
             ans = gp.gp_camera_init(self._cam, context)
+            print "ans:" + str(ans)
             if ans == 0:
                 break
             elif ans == -60:
