@@ -161,9 +161,10 @@ class Pyying():
 
 def main(argv):
   nowindow = False
-
+  host = "localhost"
+  port = 8011
   try:
-    opts, args = getopt.getopt(argv,"hn",["nowindow"])
+    opts, args = getopt.getopt(argv,"hni:p:",["nowindow", "ip=", "port="])
   except getopt.GetoptError:
     print 'pyying.py -h to get help'
     sys.exit(2)
@@ -174,8 +175,12 @@ def main(argv):
       sys.exit()
     elif opt in ("-n", "--nowindow"):
         nowindow = True
+    elif opt in ("-i", "--ip"):
+        host = arg
+    elif opt in ("-p", "--port"):
+        port = arg
 
-  ying = Pyying(nowindow=nowindow)
+  ying = Pyying(host=host, port=port, nowindow=nowindow)
   ying.start()
 
 if __name__ == '__main__':

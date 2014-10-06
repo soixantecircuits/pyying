@@ -41,7 +41,7 @@ $ sh run.sh
 Or you can separately run pyying
 ```
 $ cd ~/sources/python/soixante/pyying
-$ python pyying.py
+$ python pyying.py -i localhost -p 8010 -n
 ```
 and, in another window, run mjpg-streamer
 ```
