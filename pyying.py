@@ -32,7 +32,7 @@ class Pyying():
     isShooting = False
     isClosing = False
 
-    def __init__(self, host="localhost", port=8011, nowindow=False):
+    def __init__(self, host="localhost", port=8010, nowindow=False):
         self.nowindow = nowindow
         self.host = host
         self.port = port
@@ -143,6 +143,7 @@ class Pyying():
         return
 
     def shoot_handler(self, addr, tags, data, client):
+        print "shoot"
         self.isShooting = True
         return
 
@@ -162,7 +163,7 @@ class Pyying():
 def main(argv):
   nowindow = False
   host = "localhost"
-  port = 8011
+  port = 8010
   try:
     opts, args = getopt.getopt(argv,"hni:p:",["nowindow", "ip=", "port="])
   except getopt.GetoptError:

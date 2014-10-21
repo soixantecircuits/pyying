@@ -1,7 +1,7 @@
 from OSC import *   #required, to install : sudo pip install pyOSC
 from time import sleep
 listen_address = '127.0.0.1'
-port = 6666
+port = 5555
 c = OSCClient()
 c.connect((listen_address, port))	# connect to our OSCServer
 bundle = OSCBundle("/pyying/shoot")
