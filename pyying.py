@@ -3,7 +3,7 @@
 
 
 import threading
-import piggyphoto, pygame
+import piggyphoto
 import os
 import sys
 import time
@@ -15,7 +15,7 @@ import signal
 from OSC import * #required, to install : sudo pip install pyOSC
 
 class Pyying():
-    snap_path = '/var/www/html/pyying/snaps/' # Don't forget to $ chown `whoami` this folder
+    snap_path = 'snaps/' # Don't forget to $ chown `whoami` this folder
     snap_filename = 'snap'
     path = '/tmp/stream/'
     filename = 'preview'
@@ -76,13 +76,15 @@ class Pyying():
           self.close()
 
     def start(self):
-        clock = pygame.time.Clock()
+        if (not self.nowindow):
+          clock = pygame.time.Clock()
         try:
           while not self.quit_pressed():
 
             # trying to get a fixed fps. However the camera is limiting to approx 22 fps
             # print str(clock.get_fps())
-            clock.tick(25)
+            if (not self.nowindow):
+              clock.tick(25)
 
             # Shoot picture
             if (self.isShooting):
@@ -181,6 +183,8 @@ def main(argv):
     elif opt in ("-p", "--port"):
         port = arg
 
+  if (not nowindow):
+    import pygame
   ying = Pyying(host=host, port=port, nowindow=nowindow)
   ying.start()
 
