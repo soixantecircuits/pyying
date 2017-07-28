@@ -6,7 +6,7 @@ Install pyying
 --------------
 ```
 sudo apt-get install python-pygame python-pip gphoto2 libgphoto2-2-dev libgphoto2-port0
-sudo pip install pyOSC
+sudo pip install -r requirements.txt
 
 cd ~/sources
 mkdir python
@@ -41,7 +41,7 @@ $ sh run.sh
 Or you can separately run pyying
 ```
 $ cd ~/sources/python/soixante/pyying
-$ python pyying.py -i localhost -p 8010 -n
+$ python pyying.py --server.host localhost --server.port 8010 --nowindow true
 ```
 and, in another window, run mjpg-streamer
 ```

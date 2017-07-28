@@ -13,6 +13,9 @@ import signal
 import re
 import signal
 from OSC import * #required, to install : sudo pip install pyOSC
+from dotmap import DotMap
+import pyStandardSettings
+from pyStandardSettings import settings
 
 class Pyying():
     snap_path = 'snaps/' # Don't forget to $ chown `whoami` this folder
@@ -163,29 +166,10 @@ class Pyying():
 
 
 def main(argv):
-  nowindow = False
-  host = "localhost"
-  port = 8010
-  try:
-    opts, args = getopt.getopt(argv,"hni:p:",["nowindow", "ip=", "port="])
-  except getopt.GetoptError:
-    print 'pyying.py -h to get help'
-    sys.exit(2)
-  for opt, arg in opts:
-    if opt == '-h':
-      print 'press spacebar to take a snapshot'
-      print 'run "pyying.py --nowindow" for a x-less run'
-      sys.exit()
-    elif opt in ("-n", "--nowindow"):
-        nowindow = True
-    elif opt in ("-i", "--ip"):
-        host = arg
-    elif opt in ("-p", "--port"):
-        port = arg
-
-  if (not nowindow):
+  settings = DotMap(pyStandardSettings.getSettings())
+  if (not settings.nowindow):
     import pygame
-  ying = Pyying(host=host, port=port, nowindow=nowindow)
+  ying = Pyying(host=settings.server.host, port=settings.server.port, nowindow=settings.nowindow)
   ying.start()
 
 if __name__ == '__main__':
