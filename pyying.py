@@ -17,6 +17,7 @@ from dotmap import DotMap
 import pyStandardSettings
 from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
+from socketIO_client_nexus.exceptions import ConnectionError
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -54,9 +55,6 @@ class Pyying():
         print "Starting OSCServer. Use ctrl-C to quit."
 
         # spacebro
-        spacebroSettings = self.settings.service.spacebro
-        self.spacebroClient = SpacebroClient(spacebroSettings.toDict())
-        self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
         self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
         self.spacebroThread.start()
 
@@ -124,8 +122,18 @@ class Pyying():
           self.close()
 
     def startSpacebroClient(self):
+      spacebroSettings = self.settings.service.spacebro
       while not self.quit_pressed():
-        self.spacebroClient.wait(3)
+        try:
+          self.spacebroClient = SpacebroClient(spacebroSettings.toDict(), wait_for_connection=False)
+          self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+          while not self.quit_pressed():
+            self.spacebroClient.wait(3)
+        except ConnectionError as e:
+          print str(e)
+        time.sleep(1)
+      if hasattr(self, 'spacebroClient'):
+        self.spacebroClient.disconnect()
       return
 
     def sigclose(self, signum, frame):
