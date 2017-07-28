@@ -3,6 +3,10 @@
     "host": "localhost",
     "port": 8010
   },
-  "nowindow": false
+  "nowindow": false,
+  "folder": {
+    "output": "snaps",
+    "stream": "/tmp/stream/"
+  }
 }
 

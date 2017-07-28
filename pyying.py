@@ -18,9 +18,9 @@ import pyStandardSettings
 from pyStandardSettings import settings
 
 class Pyying():
-    snap_path = 'snaps/' # Don't forget to $ chown `whoami` this folder
+    snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
     snap_filename = 'snap'
-    path = '/tmp/stream/'
+    stream_path = '/tmp/stream'
     filename = 'preview'
     extension = 'jpg'
     number = 0
@@ -39,6 +39,9 @@ class Pyying():
         self.nowindow = nowindow
         self.host = host
         self.port = port
+        self.settings = DotMap(pyStandardSettings.getSettings())
+        self.snap_path = str(self.settings.folder.output)
+        self.stream_path = str(self.settings.folder.stream)
 
         # osc
         self.oscServer = OSCServer((host, int(port)))
@@ -55,8 +58,8 @@ class Pyying():
 
         try:
           # check folders exist
-          if not os.path.exists(self.path):
-                os.makedirs(self.path)
+          if not os.path.exists(self.stream_path):
+                os.makedirs(self.stream_path)
           if not os.path.exists(self.snap_path):
                 os.makedirs(self.snap_path)
           self.find_last_number_in_directory()
@@ -64,7 +67,7 @@ class Pyying():
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          fullpath = self.path + self.filename + ("%05d" % self.number) + '.' + self.extension
+          fullpath = os.path.join(self.stream_path, self.filename + ("%05d" % self.number) + '.' + self.extension)
           self.camera.capture_preview(fullpath)
 
           # create window from first preview
@@ -93,13 +96,13 @@ class Pyying():
             if (self.isShooting):
               self.isShooting = False
               print 'Shoot!'
-              fullpath = self.snap_path + self.snap_filename + ("%05d" % self.snap_number) + '.' + self.extension
+              fullpath = os.path.join(self.snap_path, self.snap_filename + ("%05d" % self.snap_number) + '.' + self.extension)
               self.camera.capture_image(fullpath, delete=True)
               self.snap_number+=1
 
             # Stream pictures
             if (self.isStreaming):
-                fullpath = self.path + self.filename + str(self.number) + '.' + self.extension
+                fullpath = os.path.join(self.stream_path, self.filename + str(self.number) + '.' + self.extension)
                 self.camera.capture_preview(fullpath)
                 if (not self.nowindow):
                   self.show(fullpath)
@@ -153,7 +156,7 @@ class Pyying():
         return
 
     def find_last_number_in_directory(self):
-        fullpath = self.snap_path + self.snap_filename + '*.' + self.extension
+        fullpath = os.path.join(self.snap_path, self.snap_filename + '*.' + self.extension)
         files = sorted(glob.glob(fullpath))
         if (len(files) > 0):
           filename = files[-1]
