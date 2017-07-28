@@ -16,6 +16,7 @@ from OSC import * #required, to install : sudo pip install pyOSC
 from dotmap import DotMap
 import pyStandardSettings
 from pyStandardSettings import settings
+from pySpacebroClient import SpacebroClient
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -52,6 +53,12 @@ class Pyying():
         self.oscThread.start()
         print "Starting OSCServer. Use ctrl-C to quit."
 
+        # spacebro
+        spacebroSettings = self.settings.service.spacebro
+        self.spacebroClient = SpacebroClient(spacebroSettings.toDict())
+        self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+        self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
+        self.spacebroThread.start()
 
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
@@ -116,6 +123,10 @@ class Pyying():
           print str(e)
           self.close()
 
+    def startSpacebroClient(self):
+      while not self.quit_pressed():
+        self.spacebroClient.wait(3)
+      return
 
     def sigclose(self, signum, frame):
       self.isClosing = True
@@ -124,6 +135,7 @@ class Pyying():
         self.isClosing = True
         self.oscServer.close()
         self.oscThread.join()
+        self.spacebroThread.join()
         self.camera.leave_locked()
         print "Have a good day!"
 
@@ -151,7 +163,12 @@ class Pyying():
         return
 
     def shoot_handler(self, addr, tags, data, client):
-        print "shoot"
+        print "osc shoot"
+        self.isShooting = True
+        return
+
+    def onShoot(self, data):
+        print "spacebro shoot"
         self.isShooting = True
         return
 
