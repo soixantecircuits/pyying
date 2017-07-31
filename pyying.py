@@ -107,8 +107,16 @@ class Pyying():
                 fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
               else:
                 fullpath = self.getSnapPath()
+              
               self.camera.capture_image(fullpath, delete=True)
-              #spacebro emit here
+              
+              # say it on spacebro
+              self.media['path'] = os.path.abspath(fullpath)
+              self.media['cameraNumber'] = self.settings.cameraNumber
+              spacebroSettings = self.settings.service.spacebro
+              self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
+
+              # clear
               self.media = {}
 
             # Stream pictures
@@ -205,7 +213,6 @@ class Pyying():
         files = sorted(glob.glob(fullpath))
         if (len(files) > 0):
           filename = files[-1]
-          print filename
           regex = re.compile(r'\d\d\d\d\d')
           number = regex.findall(filename)
           if (len(number) > 0):
