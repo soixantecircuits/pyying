@@ -22,11 +22,13 @@ from socketIO_client_nexus.exceptions import ConnectionError
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
     snap_filename = 'snap'
+    snap_extension = 'jpg'
     stream_path = '/tmp/stream'
-    filename = 'preview'
-    extension = 'jpg'
+    stream_filename = 'preview'
+    stream_extension = 'jpg'
     number = 0
     snap_number = 0
+    media = {}
 
     oscServer = None
     oscThread = None
@@ -72,7 +74,7 @@ class Pyying():
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          fullpath = os.path.join(self.stream_path, self.filename + ("%05d" % self.number) + '.' + self.extension)
+          fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
 
           # create window from first preview
@@ -101,13 +103,17 @@ class Pyying():
             if (self.isShooting):
               self.isShooting = False
               print 'Shoot!'
-              fullpath = os.path.join(self.snap_path, self.snap_filename + ("%05d" % self.snap_number) + '.' + self.extension)
+              if 'albumId' in self.media:
+                fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
+              else:
+                fullpath = self.getSnapPath()
               self.camera.capture_image(fullpath, delete=True)
-              self.snap_number+=1
+              #spacebro emit here
+              self.media = {}
 
             # Stream pictures
             if (self.isStreaming):
-                fullpath = os.path.join(self.stream_path, self.filename + str(self.number) + '.' + self.extension)
+                fullpath = self.getStreamPath()
                 self.camera.capture_preview(fullpath)
                 if (not self.nowindow):
                   self.show(fullpath)
@@ -177,14 +183,29 @@ class Pyying():
 
     def onShoot(self, data):
         print "spacebro shoot"
+        self.media = data
         self.isShooting = True
         return
 
+
+    def getStreamPath(self):
+      fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
+      return fullpath
+
+    def getSnapPath(self, albumId=-1, cameraNumber='01'):
+      if albumId is -1:
+        albumId = ("%05d" % self.snap_number)
+        self.snap_number+=1
+
+      fullpath = os.path.join(self.snap_path, self.snap_filename + '-' + albumId  + '-' + cameraNumber + '.' + self.snap_extension)
+      return str(fullpath)
+
     def find_last_number_in_directory(self):
-        fullpath = os.path.join(self.snap_path, self.snap_filename + '*.' + self.extension)
+        fullpath = os.path.join(self.snap_path, self.snap_filename + '-[0-9]*[0-9]*-*.' + self.snap_extension)
         files = sorted(glob.glob(fullpath))
         if (len(files) > 0):
           filename = files[-1]
+          print filename
           regex = re.compile(r'\d\d\d\d\d')
           number = regex.findall(filename)
           if (len(number) > 0):

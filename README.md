@@ -51,3 +51,22 @@ $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o     "/usr
 See it in browser
 
 http://127.0.0.1:8080/?action=stream
+
+Spacebro API
+------------
+
+#### shoot
+
+Send a shoot message to take picture
+
+Optional arguments in data:
+
+```
+{
+  "albumId" : "myAlbumId"
+}
+```
+
+This will influence the filename in the form `snap-myAlbumId-cameraNumber.jpg`  
+cameraNumber is an optional camera number defined in pyying settings.
+

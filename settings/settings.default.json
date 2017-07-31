@@ -30,6 +30,7 @@
     }
   },
   "nowindow": false,
+  "cameraNumber": "01",
   "folder": {
     "output": "snaps",
     "stream": "/tmp/stream/"
