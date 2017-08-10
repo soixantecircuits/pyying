@@ -1,0 +1,39 @@
+{
+  "server": {
+    "host": "localhost",
+    "port": 8010
+  },
+  "service": {
+    "spacebro": {
+      "host": "spacebro.space",
+      "port": 3333,
+      "channelName": "media-stream",
+      "client": {
+        "name": "pyying",
+        "description": "An app to take pictures with reflex cameras",
+        "in": {
+          "shoot": {
+            "eventName": "shoot",
+            "description": "Take a picture",
+            "type": "all"
+          }
+        },
+        "out": {
+          "outMedia": {
+            "eventName": "outMedia",
+            "description": "picture taken",
+            "type": "all"
+          }
+        }
+      },
+      "verbose": true
+    }
+  },
+  "nowindow": false,
+  "cameraNumber": "01",
+  "folder": {
+    "output": "snaps",
+    "stream": "/tmp/stream/"
+  }
+}
+

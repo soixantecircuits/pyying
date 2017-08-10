@@ -13,15 +13,22 @@ import signal
 import re
 import signal
 from OSC import * #required, to install : sudo pip install pyOSC
+from dotmap import DotMap
+import pyStandardSettings
+from pyStandardSettings import settings
+from pySpacebroClient import SpacebroClient
+from socketIO_client_nexus.exceptions import ConnectionError
 
 class Pyying():
-    snap_path = 'snaps/' # Don't forget to $ chown `whoami` this folder
+    snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
     snap_filename = 'snap'
-    path = '/tmp/stream/'
-    filename = 'preview'
-    extension = 'jpg'
+    snap_extension = 'jpg'
+    stream_path = '/tmp/stream'
+    stream_filename = 'preview'
+    stream_extension = 'jpg'
     number = 0
     snap_number = 0
+    media = {}
 
     oscServer = None
     oscThread = None
@@ -36,6 +43,9 @@ class Pyying():
         self.nowindow = nowindow
         self.host = host
         self.port = port
+        self.settings = DotMap(pyStandardSettings.getSettings())
+        self.snap_path = str(self.settings.folder.output)
+        self.stream_path = str(self.settings.folder.stream)
 
         # osc
         self.oscServer = OSCServer((host, int(port)))
@@ -46,14 +56,17 @@ class Pyying():
         self.oscThread.start()
         print "Starting OSCServer. Use ctrl-C to quit."
 
+        # spacebro
+        self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
+        self.spacebroThread.start()
 
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
 
         try:
           # check folders exist
-          if not os.path.exists(self.path):
-                os.makedirs(self.path)
+          if not os.path.exists(self.stream_path):
+                os.makedirs(self.stream_path)
           if not os.path.exists(self.snap_path):
                 os.makedirs(self.snap_path)
           self.find_last_number_in_directory()
@@ -61,7 +74,7 @@ class Pyying():
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          fullpath = self.path + self.filename + ("%05d" % self.number) + '.' + self.extension
+          fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
 
           # create window from first preview
@@ -90,13 +103,25 @@ class Pyying():
             if (self.isShooting):
               self.isShooting = False
               print 'Shoot!'
-              fullpath = self.snap_path + self.snap_filename + ("%05d" % self.snap_number) + '.' + self.extension
+              if 'albumId' in self.media:
+                fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
+              else:
+                fullpath = self.getSnapPath()
+              
               self.camera.capture_image(fullpath, delete=True)
-              self.snap_number+=1
+              
+              # say it on spacebro
+              self.media['path'] = os.path.abspath(fullpath)
+              self.media['cameraNumber'] = self.settings.cameraNumber
+              spacebroSettings = self.settings.service.spacebro
+              self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
+
+              # clear
+              self.media = {}
 
             # Stream pictures
             if (self.isStreaming):
-                fullpath = self.path + self.filename + str(self.number) + '.' + self.extension
+                fullpath = self.getStreamPath()
                 self.camera.capture_preview(fullpath)
                 if (not self.nowindow):
                   self.show(fullpath)
@@ -110,6 +135,20 @@ class Pyying():
           print str(e)
           self.close()
 
+    def startSpacebroClient(self):
+      spacebroSettings = self.settings.service.spacebro
+      while not self.quit_pressed():
+        try:
+          self.spacebroClient = SpacebroClient(spacebroSettings.toDict(), wait_for_connection=False)
+          self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+          while not self.quit_pressed():
+            self.spacebroClient.wait(3)
+        except ConnectionError as e:
+          print str(e)
+        time.sleep(1)
+      if hasattr(self, 'spacebroClient'):
+        self.spacebroClient.disconnect()
+      return
 
     def sigclose(self, signum, frame):
       self.isClosing = True
@@ -118,6 +157,7 @@ class Pyying():
         self.isClosing = True
         self.oscServer.close()
         self.oscThread.join()
+        self.spacebroThread.join()
         self.camera.leave_locked()
         print "Have a good day!"
 
@@ -145,12 +185,31 @@ class Pyying():
         return
 
     def shoot_handler(self, addr, tags, data, client):
-        print "shoot"
+        print "osc shoot"
         self.isShooting = True
         return
 
+    def onShoot(self, data):
+        print "spacebro shoot"
+        self.media = data
+        self.isShooting = True
+        return
+
+
+    def getStreamPath(self):
+      fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
+      return fullpath
+
+    def getSnapPath(self, albumId=-1, cameraNumber='01'):
+      if albumId is -1:
+        albumId = ("%05d" % self.snap_number)
+        self.snap_number+=1
+
+      fullpath = os.path.join(self.snap_path, self.snap_filename + '-' + albumId  + '-' + cameraNumber + '.' + self.snap_extension)
+      return str(fullpath)
+
     def find_last_number_in_directory(self):
-        fullpath = self.snap_path + self.snap_filename + '*.' + self.extension
+        fullpath = os.path.join(self.snap_path, self.snap_filename + '-[0-9]*[0-9]*-*.' + self.snap_extension)
         files = sorted(glob.glob(fullpath))
         if (len(files) > 0):
           filename = files[-1]
@@ -163,29 +222,10 @@ class Pyying():
 
 
 def main(argv):
-  nowindow = False
-  host = "localhost"
-  port = 8010
-  try:
-    opts, args = getopt.getopt(argv,"hni:p:",["nowindow", "ip=", "port="])
-  except getopt.GetoptError:
-    print 'pyying.py -h to get help'
-    sys.exit(2)
-  for opt, arg in opts:
-    if opt == '-h':
-      print 'press spacebar to take a snapshot'
-      print 'run "pyying.py --nowindow" for a x-less run'
-      sys.exit()
-    elif opt in ("-n", "--nowindow"):
-        nowindow = True
-    elif opt in ("-i", "--ip"):
-        host = arg
-    elif opt in ("-p", "--port"):
-        port = arg
-
-  if (not nowindow):
+  settings = DotMap(pyStandardSettings.getSettings())
+  if (not settings.nowindow):
     import pygame
-  ying = Pyying(host=host, port=port, nowindow=nowindow)
+  ying = Pyying(host=settings.server.host, port=settings.server.port, nowindow=settings.nowindow)
   ying.start()
 
 if __name__ == '__main__':

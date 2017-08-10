@@ -6,7 +6,7 @@ Install pyying
 --------------
 ```
 sudo apt-get install python-pygame python-pip gphoto2 libgphoto2-2-dev libgphoto2-port0
-sudo pip install pyOSC
+sudo pip install -r requirements.txt
 
 cd ~/sources
 mkdir python
@@ -41,7 +41,7 @@ $ sh run.sh
 Or you can separately run pyying
 ```
 $ cd ~/sources/python/soixante/pyying
-$ python pyying.py -i localhost -p 8010 -n
+$ python pyying.py --server.host localhost --server.port 8010 --nowindow true
 ```
 and, in another window, run mjpg-streamer
 ```
@@ -51,3 +51,22 @@ $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o     "/usr
 See it in browser
 
 http://127.0.0.1:8080/?action=stream
+
+Spacebro API
+------------
+
+#### shoot
+
+Send a shoot message to take picture
+
+Optional arguments in data:
+
+```
+{
+  "albumId" : "myAlbumId"
+}
+```
+
+This will influence the filename in the form `snap-myAlbumId-cameraNumber.jpg`  
+cameraNumber is an optional camera number defined in pyying settings.
+
