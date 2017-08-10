@@ -30,6 +30,7 @@
     }
   },
   "nowindow": false,
+  "streamAtStartup": true,
   "cameraNumber": "01",
   "folder": {
     "output": "snaps",

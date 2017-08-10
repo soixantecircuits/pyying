@@ -46,6 +46,7 @@ class Pyying():
         self.settings = DotMap(pyStandardSettings.getSettings())
         self.snap_path = str(self.settings.folder.output)
         self.stream_path = str(self.settings.folder.stream)
+        self.isStreaming = self.settings.streamAtStartup
 
         # osc
         self.oscServer = OSCServer((host, int(port)))
@@ -126,6 +127,8 @@ class Pyying():
                 if (not self.nowindow):
                   self.show(fullpath)
                 self.number += 1
+            else:
+              time.sleep(0.0001) # avoid cpu > 100%
 
           self.close()
 
@@ -158,7 +161,10 @@ class Pyying():
         self.oscServer.close()
         self.oscThread.join()
         self.spacebroThread.join()
-        self.camera.leave_locked()
+        try:
+          self.camera.leave_locked()
+        except AttributeError:
+          pass
         print("Have a good day!")
 
     def quit_pressed(self):
