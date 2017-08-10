@@ -1,3 +1,4 @@
 mjpg-streamer
 snaps/*
 *.pyc
+settings/settings.json
