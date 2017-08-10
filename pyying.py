@@ -54,7 +54,7 @@ class Pyying():
         self.oscServer.addMsgHandler("/pyying/shoot", self.shoot_handler)
         self.oscThread = threading.Thread(target=self.oscServer.serve_forever)
         self.oscThread.start()
-        print "Starting OSCServer. Use ctrl-C to quit."
+        print("Starting OSCServer. Use ctrl-C to quit.")
 
         # spacebro
         self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
@@ -85,7 +85,7 @@ class Pyying():
         except KeyboardInterrupt:
           self.close()
         except Exception as e:
-          print str(e)
+          print(str(e))
           self.close()
 
     def start(self):
@@ -102,14 +102,14 @@ class Pyying():
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False
-              print 'Shoot!'
+              print('Shoot!')
               if 'albumId' in self.media:
                 fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
               else:
                 fullpath = self.getSnapPath()
-              
+
               self.camera.capture_image(fullpath, delete=True)
-              
+
               # say it on spacebro
               self.media['path'] = os.path.abspath(fullpath)
               self.media['cameraNumber'] = self.settings.cameraNumber
@@ -132,7 +132,7 @@ class Pyying():
         except KeyboardInterrupt:
           self.close()
         except Exception as e:
-          print str(e)
+          print(str(e))
           self.close()
 
     def startSpacebroClient(self):
@@ -144,7 +144,7 @@ class Pyying():
           while not self.quit_pressed():
             self.spacebroClient.wait(3)
         except ConnectionError as e:
-          print str(e)
+          print(str(e))
         time.sleep(1)
       if hasattr(self, 'spacebroClient'):
         self.spacebroClient.disconnect()
@@ -159,7 +159,7 @@ class Pyying():
         self.oscThread.join()
         self.spacebroThread.join()
         self.camera.leave_locked()
-        print "Have a good day!"
+        print("Have a good day!")
 
     def quit_pressed(self):
       if (not self.nowindow):
@@ -177,20 +177,20 @@ class Pyying():
           self.main_surface.blit(picture, (0, 0))
           pygame.display.flip()
         except Exception as e:
-          print str(e)
+          print(str(e))
 
     def stream_handler(self, addr, tags, data, client):
-        print "Stream: " + str(data) + " is that " + str(True) + " ?"
+        print("Stream: " + str(data) + " is that " + str(True) + " ?")
         self.isStreaming = data
         return
 
     def shoot_handler(self, addr, tags, data, client):
-        print "osc shoot"
+        print("osc shoot")
         self.isShooting = True
         return
 
     def onShoot(self, data):
-        print "spacebro shoot"
+        print("spacebro shoot")
         self.media = data
         self.isShooting = True
         return
