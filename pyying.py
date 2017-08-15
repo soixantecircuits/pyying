@@ -108,23 +108,7 @@ class Pyying():
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False
-              print('Shoot!')
-              if 'albumId' in self.media:
-                fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
-              else:
-                fullpath = self.getSnapPath()
-
-              self.camera.capture_image(fullpath, delete=True)
-
-              # say it on spacebro
-              self.media['path'] = os.path.abspath(fullpath)
-              self.media['cameraNumber'] = self.settings.cameraNumber
-              spacebroSettings = self.settings.service.spacebro
-              self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
-
-              # clear
-              self.media = {}
-
+              self.shoot()
             # Stream pictures
             if (self.isStreaming):
                 fullpath = self.getStreamPath()
@@ -142,6 +126,27 @@ class Pyying():
         except Exception as e:
           print(str(e))
           self.close()
+
+    def shoot(self):
+      print('Shoot!')
+      if 'albumId' in self.media:
+        fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
+      else:
+        fullpath = self.getSnapPath()
+
+      self.camera.capture_image(fullpath, delete=True)
+
+      # say it on spacebro
+      self.media['path'] = os.path.abspath(fullpath)
+      self.media['file'] = os.path.basename(fullpath)
+      self.media['url'] = "http://" + self.settings.server.host + ":" + str(self.settings.server.port) \
+                        + "/" + self.media['file']
+      self.media['cameraNumber'] = self.settings.cameraNumber
+      spacebroSettings = self.settings.service.spacebro
+      self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
+
+      # clear
+      self.media = {}
 
     def startSpacebroClient(self):
       spacebroSettings = self.settings.service.spacebro
