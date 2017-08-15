@@ -1,6 +1,10 @@
 #to run a mjpeg server (like IP camera)
 # run $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 
+# TODO
+# * get first ip from system if settings.server.host is ""
+# * set standard port
+# * do not use OSC if pyOSC not installed
 
 import threading
 import piggyphoto
