@@ -18,6 +18,7 @@ import pyStandardSettings
 from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
+from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -60,6 +61,10 @@ class Pyying():
         # spacebro
         self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
         self.spacebroThread.start()
+
+        # static file server
+        self.staticFileServerThread = threading.Thread(target=self.startStaticFileServer)
+        self.staticFileServerThread.start()
 
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
@@ -153,14 +158,29 @@ class Pyying():
         self.spacebroClient.disconnect()
       return
 
+    def startStaticFileServer(self):
+      server_address = ('', self.settings['server']['port'])
+      self.httpd = RootedHTTPServer(self.settings['folder']['output'], server_address, RootedHTTPRequestHandler)
+
+      sa = self.httpd.socket.getsockname()
+      print "Serving HTTP on", sa[0], "port", sa[1], "..."
+      while not self.quit_pressed():
+        print "handle req"
+        self.httpd.handle_request()
+        #httpd.handle()
+        print "handle req finished"
+
     def sigclose(self, signum, frame):
       self.isClosing = True
 
     def close(self):
+        print("Closing application")
         self.isClosing = True
         self.oscServer.close()
         self.oscThread.join()
         self.spacebroThread.join()
+        self.httpd.close_connection = 0
+        self.staticFileServerThread.join()
         try:
           self.camera.leave_locked()
         except AttributeError:
