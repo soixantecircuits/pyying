@@ -163,12 +163,10 @@ class Pyying():
       self.httpd = RootedHTTPServer(self.settings['folder']['output'], server_address, RootedHTTPRequestHandler)
 
       sa = self.httpd.socket.getsockname()
-      print "Serving HTTP on", sa[0], "port", sa[1], "..."
-      while not self.quit_pressed():
-        print "handle req"
-        self.httpd.handle_request()
-        #httpd.handle()
-        print "handle req finished"
+      if str(self.settings.server.host) is "":
+        self.settings.server.host = sa[0]
+      print("Serving folder '" + self.settings.folder.output + "' on " + self.settings.server.host + ":" + str(sa[1]) + " ...")
+      self.httpd.serve_forever()
 
     def sigclose(self, signum, frame):
       self.isClosing = True
@@ -179,7 +177,7 @@ class Pyying():
         self.oscServer.close()
         self.oscThread.join()
         self.spacebroThread.join()
-        self.httpd.close_connection = 0
+        self.httpd.shutdown()
         self.staticFileServerThread.join()
         try:
           self.camera.leave_locked()
