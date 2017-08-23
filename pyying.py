@@ -75,6 +75,14 @@ class Pyying():
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
+          cfgmap = self.camera.map_config()
+          print cfgmap
+          #config = self.camera.config
+          #print config.get_child_by_label('Aperture').value
+          ##config.get_child_by_label('Aperture').value = '5.6'
+          #self.camera.config = config
+          #config = self.camera.config
+          #print config.get_child_by_label('Aperture').value
           fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
 
