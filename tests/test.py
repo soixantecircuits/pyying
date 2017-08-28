@@ -13,6 +13,7 @@ import pyStandardSettings
 from dotmap import DotMap
 
 timeout=1
+shoot_timeout=6
 verbose=True
 
 class TestSpacebroClient(unittest.TestCase):
@@ -33,7 +34,7 @@ class TestSpacebroClient(unittest.TestCase):
         spacebroClient.on(str(spacebroSettings.client['out'].outMedia.eventName), self.on_inMedia)
         spacebroClient.wait(seconds=timeout)
         spacebroClient.emit(str(spacebroSettings.client['in'].shoot.eventName), media.toDict())
-        spacebroClient.wait(seconds=timeout)
+        spacebroClient.wait(seconds=shoot_timeout)
 
         self.assertEqual(DotMap(self.inMediaValue).albumId, media.albumId)
         self.assertTrue(path.exists(str(self.inMediaValue['path'])))
