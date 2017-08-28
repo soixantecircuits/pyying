@@ -364,6 +364,41 @@ class camera(object):
         self._list_config(cfg, cfglist, cfg.name)
         return cfglist
 
+    def _map_config(self, widget, cfgmap):
+        cfgmap[widget.name] = {}
+        cfgmap[widget.name]['label'] = widget.label
+        cfgmap[widget.name]['type'] = widget.typestr
+        children = widget.children
+        if children:
+            for c in children:
+                self._map_config(c, cfgmap[widget.name])
+        else:
+            cfgmap[widget.name]['value'] = widget.value
+            if widget.count_choices() > 0:
+                cfgmap[widget.name]['choices'] = []
+                for i in range(widget.count_choices()) :
+                    cfgmap[widget.name]['choices'].append(widget.get_choice(i))
+
+    def get_map_config(self):
+        cfgmap = {}
+        cfg = self.config
+        self._map_config(cfg, cfgmap)
+        return cfgmap
+
+    def set_map_config(self, cfgmap):
+        cfg = self.config
+        self._set_map_config(cfg, cfgmap)
+        self.config = cfg 
+
+    def _set_map_config(self, widget, cfgmap):
+        children = widget.children
+        if children:
+            for c in children:
+                self._set_map_config(c, cfgmap[widget.name])
+        else:
+          if cfgmap[widget.name]['value']: 
+            widget.value = cfgmap[widget.name]['value'] 
+        
     def ptp_canon_eos_requestdevicepropvalue(self, prop):
         params = ctypes.c_void_p(self._cam.value + 12)
         gp.ptp_generic_no_data(params, PTP_OC_CANON_EOS_RequestDevicePropValue, 1, prop)
@@ -742,12 +777,12 @@ class cameraWidget(object):
     def add_choice(self, choice):
         check(gp.gp_widget_add_choice(self._w, str(choice)))
 
-    def count_choices(self, choice):
+    def count_choices(self ):
         return gp.gp_widget_count_choices(self._w)
 
     def get_choice(self, choice_number):
         choice = ctypes.c_char_p()
-        check(gp.gp_widget_add_choice(self._w, int(choice_number), PTR(choice)))
+        check(gp.gp_widget_get_choice(self._w, int(choice_number), PTR(choice)))
         return choice.value
 
     def createdoc(self):

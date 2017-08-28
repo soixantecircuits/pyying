@@ -158,6 +158,8 @@ class Pyying():
         try:
           self.spacebroClient = SpacebroClient(spacebroSettings.toDict(), wait_for_connection=False)
           self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+          self.spacebroClient.on(spacebroSettings.client['in'].getConfig.eventName, self.onGetConfig)
+          self.spacebroClient.on(spacebroSettings.client['in'].setConfig.eventName, self.onSetConfig)
           while not self.quit_pressed():
             self.spacebroClient.wait(3)
         except ConnectionError as e:
@@ -228,6 +230,37 @@ class Pyying():
         self.isShooting = True
         return
 
+    def onGetConfig(self, data):
+        print("spacebro get config")
+        self.isStreaming = False
+        cfgmap = False
+        retries = 100
+        for i in range(1 + retries):
+          try:
+            cfgmap = self.camera.get_map_config()
+            break
+          except piggyphoto.libgphoto2error as e:
+            print(str(e))
+          time.sleep(0.01)
+
+        self.isStreaming = True
+        spacebroSettings = self.settings.service.spacebro
+        self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
+        return
+
+    def onSetConfig(self, data):
+        print("spacebro set config")
+        self.isStreaming = False
+        cfgmap = data
+        retries = 100
+        for i in range(1 + retries):
+          try:
+            self.camera.set_map_config(cfgmap)
+            break
+          except piggyphoto.libgphoto2error as e:
+            print(str(e))
+          time.sleep(0.01)
+        self.isStreaming = True
 
     def getStreamPath(self):
       fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
