@@ -84,21 +84,6 @@ class Pyying():
           # camera
           self.camera = piggyphoto.camera()
           self.camera.leave_locked()
-          cfgmap = self.camera.get_map_config()
-          #print cfgmap
-          #config = self.camera.config
-          #print config.get_child_by_label('Aperture').value
-          ##config.get_child_by_label('Aperture').value = '5.6'
-          #self.camera.config = config
-          #config = self.camera.config
-          #print config.get_child_by_label('Aperture').value
-          print 'aperture', cfgmap['main']['capturesettings']['aperture']
-          #cfgmap['main']['capturesettings']['aperture']['value'] = '4.5'
-          cfgmap['main']['capturesettings']['aperture']['value'] = '5.6'
-          self.camera.set_map_config(cfgmap)
-          cfgmap = self.camera.get_map_config()
-          print 'aperture', cfgmap['main']['capturesettings']['aperture']
-
           fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
 
@@ -249,7 +234,7 @@ class Pyying():
         print("spacebro get config")
         self.isStreaming = False
         cfgmap = False
-        retries = 20
+        retries = 100
         for i in range(1 + retries):
           try:
             cfgmap = self.camera.get_map_config()
@@ -267,7 +252,7 @@ class Pyying():
         print("spacebro set config")
         self.isStreaming = False
         cfgmap = data
-        retries = 20
+        retries = 100
         for i in range(1 + retries):
           try:
             self.camera.set_map_config(cfgmap)
