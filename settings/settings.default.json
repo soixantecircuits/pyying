@@ -16,12 +16,27 @@
             "eventName": "shoot",
             "description": "Take a picture",
             "type": "all"
+          },
+          "getConfig": {
+            "eventName": "getConfig",
+            "description": "Ask for camera config (aperture, shutter speed, serial number, ...)",
+            "type": "all"
+          },
+          "setConfig": {
+            "eventName": "setConfig",
+            "description": "Set camera config (aperture, shutter speed, serial number, ...)",
+            "type": "all"
           }
         },
         "out": {
           "outMedia": {
             "eventName": "outMedia",
             "description": "picture taken",
+            "type": "all"
+          },
+          "config": {
+            "eventName": "config",
+            "description": "Return camera config (aperture, shutter speed, serial number, ...)",
             "type": "all"
           }
         }
