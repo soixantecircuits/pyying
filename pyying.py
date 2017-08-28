@@ -1,6 +1,10 @@
 #to run a mjpeg server (like IP camera)
 # run $ mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080"
 
+# TODO
+# * get first ip from system if settings.server.host is ""
+# * set standard port
+# * do not use OSC if pyOSC not installed
 
 import threading
 import piggyphoto
@@ -18,6 +22,7 @@ import pyStandardSettings
 from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
+from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -60,6 +65,10 @@ class Pyying():
         # spacebro
         self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
         self.spacebroThread.start()
+
+        # static file server
+        self.staticFileServerThread = threading.Thread(target=self.startStaticFileServer)
+        self.staticFileServerThread.start()
 
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
@@ -118,23 +127,7 @@ class Pyying():
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False
-              print('Shoot!')
-              if 'albumId' in self.media:
-                fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
-              else:
-                fullpath = self.getSnapPath()
-
-              self.camera.capture_image(fullpath, delete=True)
-
-              # say it on spacebro
-              self.media['path'] = os.path.abspath(fullpath)
-              self.media['cameraNumber'] = self.settings.cameraNumber
-              spacebroSettings = self.settings.service.spacebro
-              self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
-
-              # clear
-              self.media = {}
-
+              self.shoot()
             # Stream pictures
             if (self.isStreaming):
                 fullpath = self.getStreamPath()
@@ -153,6 +146,27 @@ class Pyying():
           print(str(e))
           self.close()
 
+    def shoot(self):
+      print('Shoot!')
+      if 'albumId' in self.media:
+        fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
+      else:
+        fullpath = self.getSnapPath()
+
+      self.camera.capture_image(fullpath, delete=True)
+
+      # say it on spacebro
+      self.media['path'] = os.path.abspath(fullpath)
+      self.media['file'] = os.path.basename(fullpath)
+      self.media['url'] = "http://" + self.settings.server.host + ":" + str(self.settings.server.port) \
+                        + "/" + self.media['file']
+      self.media['cameraNumber'] = self.settings.cameraNumber
+      spacebroSettings = self.settings.service.spacebro
+      self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
+
+      # clear
+      self.media = {}
+
     def startSpacebroClient(self):
       spacebroSettings = self.settings.service.spacebro
       while not self.quit_pressed():
@@ -168,14 +182,27 @@ class Pyying():
         self.spacebroClient.disconnect()
       return
 
+    def startStaticFileServer(self):
+      server_address = ('', self.settings['server']['port'])
+      self.httpd = RootedHTTPServer(self.settings['folder']['output'], server_address, RootedHTTPRequestHandler)
+
+      sa = self.httpd.socket.getsockname()
+      if str(self.settings.server.host) is "":
+        self.settings.server.host = sa[0]
+      print("Serving folder '" + self.settings.folder.output + "' on " + self.settings.server.host + ":" + str(sa[1]) + " ...")
+      self.httpd.serve_forever()
+
     def sigclose(self, signum, frame):
       self.isClosing = True
 
     def close(self):
+        print("Closing application")
         self.isClosing = True
         self.oscServer.close()
         self.oscThread.join()
         self.spacebroThread.join()
+        self.httpd.shutdown()
+        self.staticFileServerThread.join()
         try:
           self.camera.leave_locked()
         except AttributeError:

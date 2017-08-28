@@ -33,7 +33,7 @@ sudo make install
 Run
 ---
 
-You can run pyying and mjpeg_streamer in the same time by typing:
+You can run pyying and mjpeg_streamer at the same time by typing:
 ```
 $ sh run.sh
 ```
@@ -70,3 +70,11 @@ Optional arguments in data:
 This will influence the filename in the form `snap-myAlbumId-cameraNumber.jpg`  
 cameraNumber is an optional camera number defined in pyying settings.
 
+Tests
+------------
+
+Run tests with
+
+```
+python -m tests.test
+```

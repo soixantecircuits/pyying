@@ -3,7 +3,6 @@
 
 DIR=$(dirname $0);
 
-# echo "${BBlu} Launching mjpg_streamer ... ${RCol}"
 trap close INT TERM QUIT
 close(){
   echo "close"
@@ -12,17 +11,18 @@ close(){
   exit
 }
 
-#echo "\033[1m" 'Launching mjpg_streamer ...' "\033[0m"
+echo "\033[1m" 'Launching mjpg_streamer ...' "\033[0m"
 
-#mkdir -p /tmp/stream
-#mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080" &
-#MJPG_STREAM="$!"
+mkdir -p /tmp/stream
+mjpg_streamer -i "/usr/local/lib/input_file.so -r -f /tmp/stream" -o "/usr/local/lib/output_http.so -w /usr/local/www -p 8080" &
+MJPG_STREAMER_CMD="$!"
+echo $MJPG_STREAM_CMD
 
 echo "\033[1m" 'Launching pyying ...' "\033[0m"
 
-python $DIR/pyying.py --nowindow &
-PYYING="$!"
-echo $PYYING
+python $DIR/pyying.py --nowindow true &
+PYYING_CMD="$!"
+echo $PYYING_CMD
 
 
 wait
