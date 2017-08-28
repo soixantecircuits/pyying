@@ -364,11 +364,10 @@ class camera(object):
         self._list_config(cfg, cfglist, cfg.name)
         return cfglist
 
-
     def _map_config(self, widget, cfgmap):
         cfgmap[widget.name] = {}
         cfgmap[widget.name]['label'] = widget.label
-        cfgmap[widget.name]['type'] = widget.type
+        cfgmap[widget.name]['type'] = widget.typestr
         children = widget.children
         if children:
             for c in children:
@@ -380,12 +379,26 @@ class camera(object):
                 for i in range(widget.count_choices()) :
                     cfgmap[widget.name]['choices'].append(widget.get_choice(i))
 
-    def map_config(self):
+    def get_map_config(self):
         cfgmap = {}
         cfg = self.config
         self._map_config(cfg, cfgmap)
         return cfgmap
 
+    def set_map_config(self, cfgmap):
+        cfg = self.config
+        self._set_map_config(cfg, cfgmap)
+        self.config = cfg 
+
+    def _set_map_config(self, widget, cfgmap):
+        children = widget.children
+        if children:
+            for c in children:
+                self._set_map_config(c, cfgmap[widget.name])
+        else:
+          if cfgmap[widget.name]['value']: 
+            widget.value = cfgmap[widget.name]['value'] 
+        
     def ptp_canon_eos_requestdevicepropvalue(self, prop):
         params = ctypes.c_void_p(self._cam.value + 12)
         gp.ptp_generic_no_data(params, PTP_OC_CANON_EOS_RequestDevicePropValue, 1, prop)
