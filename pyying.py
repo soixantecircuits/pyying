@@ -244,6 +244,7 @@ class Pyying():
           time.sleep(0.01)
 
         self.isStreaming = True
+        cfgmap['cameraNumber'] = self.settings.cameraNumber
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
         return
