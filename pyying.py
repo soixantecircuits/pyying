@@ -245,6 +245,7 @@ class Pyying():
 
         self.isStreaming = True
         cfgmap['cameraNumber'] = self.settings.cameraNumber
+        cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
         return

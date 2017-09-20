@@ -4,6 +4,9 @@
     "port": 8010
   },
   "service": {
+    "mjpg_streamer": {
+      "url": "http://localhost:36700/?action=stream"
+    },
     "spacebro": {
       "host": "spacebro.space",
       "port": 3333,
