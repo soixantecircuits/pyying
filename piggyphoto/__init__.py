@@ -25,7 +25,9 @@ libgphoto2dll = 'libgphoto2.so'
 import re
 import ctypes
 gp = ctypes.CDLL(libgphoto2dll)
-context = gp.gp_context_new()
+#context = gp.gp_context_new()
+gp.gp_context_new.restype = ctypes.c_void_p
+context = ctypes.c_void_p(gp.gp_context_new())
 
 def library_version(verbose = True):
     gp.gp_library_version.restype = ctypes.POINTER(ctypes.c_char_p)
@@ -220,7 +222,7 @@ class camera(object):
 
         ans = 0
         if port:
-          print "Looking for port " + port 
+          print "Looking for port " + port
           il = portInfoList()
           try:
             self.port_info = il.get_info(il.lookup_path(port))
@@ -529,8 +531,10 @@ class portInfoList(object):
         return index
 
     def get_info(self, path_index):
-        info = PortInfo()
-        check(gp.gp_port_info_list_get_info(self._l, path_index, PTR(info)))
+        #info = PortInfo()
+        info = ctypes.c_void_p()
+        ans = gp.gp_port_info_list_get_info(self._l, path_index, PTR(info))
+        check(ans)
         return info
 
 class cameraList(object):

@@ -83,7 +83,9 @@ class Pyying():
 
           # camera
           self.camera = piggyphoto.camera(False)
-          self.camera.init(str(settings.camera.port))
+          if settings.camera.port:
+              settings.camera.port = str(settings.camera.port)
+          self.camera.init(settings.camera.port)
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
