@@ -50,6 +50,9 @@
   "nowindow": false,
   "streamAtStartup": true,
   "cameraNumber": "01",
+  "camera": {
+    "port": false
+  },
   "folder": {
     "output": "snaps",
     "stream": "/tmp/stream/"

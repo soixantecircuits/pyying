@@ -214,14 +214,27 @@ class camera(object):
         if autoInit:
             self.init()
 
-    def init(self):
+    def init(self, port = False):
         if self.initialized:
             print "Camera is already initialized."
+
         ans = 0
+        if port:
+          print "Looking for port " + port 
+          il = portInfoList()
+          try:
+            self.port_info = il.get_info(il.lookup_path(port))
+          except libgphoto2error as e:
+            # prints only first camera detected, needs a fix
+            # cl = cameraList(True)
+            # print cl.toDict()
+            print "port not found, list available ports iwht `$ gphoto2 --auto-detect `"
+
         for i in range(1 + retries):
             ans = gp.gp_camera_init(self._cam, context)
-            print "ans:" + str(ans)
+            #print "ans:" + str(ans)
             if ans == 0:
+                print "Camera connected"
                 break
             elif ans == -60:
                 print "***", unmount_cmd
@@ -299,7 +312,9 @@ class camera(object):
 
         ans = 0
         for i in range(1 + retries):
+            print('Shoot capture! ', time.time())
             ans = gp.gp_camera_capture(self._cam, GP_CAPTURE_IMAGE, PTR(path), context)
+            print('Shoot capture finished! ', time.time())
             if ans == 0: break
             else: print "capture_image(%s) retry #%d..." % (destpath, i)
         check(ans)
@@ -396,8 +411,8 @@ class camera(object):
             for c in children:
                 self._set_map_config(c, cfgmap[widget.name])
         else:
-          if cfgmap[widget.name]['value']: 
-            widget.value = cfgmap[widget.name]['value'] 
+          if widget.name in cfgmap and cfgmap[widget.name]['value']: 
+            widget.value = str(cfgmap[widget.name]['value'])
         
     def ptp_canon_eos_requestdevicepropvalue(self, prop):
         params = ctypes.c_void_p(self._cam.value + 12)
@@ -699,7 +714,7 @@ class cameraWidget(object):
             return None
         check(ans)
         return value.value
-    def _set_value(self, value):
+    def _set_value_old(self, value):
         if self.type in (GP_WIDGET_MENU, GP_WIDGET_RADIO, GP_WIDGET_TEXT):
             value = ctypes.c_char_p(value)
         elif self.type == GP_WIDGET_RANGE:
@@ -709,6 +724,12 @@ class cameraWidget(object):
         else:
             return None # this line not tested
         check(gp.gp_widget_set_value(self._w, value))
+
+    def _set_value(self, value):
+        if self.type is (GP_WIDGET_RADIO):
+            value = ctypes.c_char_p(value)
+            check(gp.gp_widget_set_value(self._w, value))
+
     value = property(_get_value, _set_value)
 
     def append(self, child):

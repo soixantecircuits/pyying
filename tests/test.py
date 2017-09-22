@@ -58,6 +58,25 @@ class TestSpacebroClient(unittest.TestCase):
         spacebroClient.wait(seconds=timeout)
         self.assertEqual(self.config['main']['capturesettings']['aperture']['value'], '6.3')
 
+        # test two changes, no get
+        self.config['main']['capturesettings']['aperture']['value'] = '6.3'
+        spacebroClient.emit(str(spacebroSettings.client['in'].setConfig.eventName), self.config)
+        spacebroClient.wait(seconds=timeout)
+        self.config['main']['capturesettings']['aperture']['value'] = '5.6'
+        spacebroClient.emit(str(spacebroSettings.client['in'].setConfig.eventName), self.config)
+        spacebroClient.wait(seconds=timeout)
+        self.config['main']['capturesettings']['aperture']['value'] = '7.1'
+        spacebroClient.emit(str(spacebroSettings.client['in'].setConfig.eventName), self.config)
+        spacebroClient.wait(seconds=timeout)
+        self.config['main']['capturesettings']['aperture']['value'] = '5.6'
+        spacebroClient.emit(str(spacebroSettings.client['in'].setConfig.eventName), self.config)
+        spacebroClient.wait(seconds=timeout)
+        self.config = {}
+        spacebroClient.emit(str(spacebroSettings.client['in'].getConfig.eventName), {})
+        spacebroClient.wait(seconds=timeout)
+        self.assertEqual(self.config['main']['capturesettings']['aperture']['value'], '5.6')
+
+
         spacebroClient.disconnect()
 
 

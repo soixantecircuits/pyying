@@ -82,7 +82,8 @@ class Pyying():
           self.find_last_number_in_directory()
 
           # camera
-          self.camera = piggyphoto.camera()
+          self.camera = piggyphoto.camera(False)
+          self.camera.init(str(settings.camera.port))
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
@@ -132,13 +133,15 @@ class Pyying():
           self.close()
 
     def shoot(self):
-      print('Shoot!')
+      print('Shoot received! ', time.time())
       if 'albumId' in self.media:
-        fullpath = self.getSnapPath(self.media['albumId'], self.settings.cameraNumber)
+        fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
       else:
         fullpath = self.getSnapPath()
 
+      print('Shoot command! ', time.time())
       self.camera.capture_image(fullpath, delete=True)
+      print('Shoot finished! ', time.time())
 
       # say it on spacebro
       self.media['path'] = os.path.abspath(fullpath)
@@ -232,6 +235,7 @@ class Pyying():
 
     def onGetConfig(self, data):
         print("spacebro get config")
+        currentIsStreaming = self.isStreaming
         self.isStreaming = False
         cfgmap = False
         retries = 100
@@ -242,8 +246,10 @@ class Pyying():
           except piggyphoto.libgphoto2error as e:
             print(str(e))
           time.sleep(0.01)
-
         self.isStreaming = True
+        print('finished get config')
+
+        self.isStreaming = currentIsStreaming
         cfgmap['cameraNumber'] = self.settings.cameraNumber
         cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
         spacebroSettings = self.settings.service.spacebro
@@ -251,9 +257,17 @@ class Pyying():
         return
 
     def onSetConfig(self, data):
+        #print("spacebro set config", data)
         print("spacebro set config")
+        #self.onGetConfig(0)
+        currentIsStreaming = self.isStreaming
         self.isStreaming = False
+        
         cfgmap = data
+        cfgmap.pop('cameraNumber')
+        cfgmap.pop('stream')
+        cfgmap.pop('_to')
+        cfgmap.pop('_from')
         retries = 100
         for i in range(1 + retries):
           try:
@@ -262,7 +276,8 @@ class Pyying():
           except piggyphoto.libgphoto2error as e:
             print(str(e))
           time.sleep(0.01)
-        self.isStreaming = True
+        print('finished set config')
+        self.isStreaming = currentIsStreaming
 
     def getStreamPath(self):
       fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
