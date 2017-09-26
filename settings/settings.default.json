@@ -51,7 +51,8 @@
   "streamAtStartup": true,
   "cameraNumber": "01",
   "camera": {
-    "port": false
+    "port": false,
+    "devpath": false
   },
   "folder": {
     "output": "snaps",

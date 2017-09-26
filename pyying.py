@@ -85,6 +85,14 @@ class Pyying():
           self.camera = piggyphoto.camera(False)
           if settings.camera.port:
               settings.camera.port = str(settings.camera.port)
+          elif settings.camera.devpath:
+              try:
+                  import pyudev
+                  context = pyudev.Context()
+                  device = pyudev.Devices.from_path(context, str(settings.camera.devpath))
+                  settings.camera.port = 'usb:{0},{1}'.format(device['BUSNUM'], device['DEVNUM'])
+              except pyudev.device._errors.DeviceNotFoundAtPathError as e:
+                  print('devpath not found', settings.camera.devpath)
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
