@@ -93,6 +93,7 @@ class Pyying():
                   settings.camera.port = 'usb:{0},{1}'.format(device['BUSNUM'], device['DEVNUM'])
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
+                  self.quit()
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
@@ -193,6 +194,9 @@ class Pyying():
       self.httpd.serve_forever()
 
     def sigclose(self, signum, frame):
+      self.quit()
+
+    def quit(self):
       self.isClosing = True
 
     def close(self):
@@ -260,8 +264,9 @@ class Pyying():
         print('finished get config')
 
         self.isStreaming = currentIsStreaming
-        cfgmap['cameraNumber'] = self.settings.cameraNumber
-        cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
+        if cfgmap:
+	  cfgmap['cameraNumber'] = self.settings.cameraNumber
+	  cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
         return
