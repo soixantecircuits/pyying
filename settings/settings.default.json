@@ -20,6 +20,11 @@
             "description": "Take a picture",
             "type": "all"
           },
+          "getStatus": {
+            "eventName": "getStatus",
+            "description": "Ask for camera status (connected, stream address, last error, ...)",
+            "type": "all"
+          },
           "getConfig": {
             "eventName": "getConfig",
             "description": "Ask for camera config (aperture, shutter speed, serial number, ...)",
@@ -35,6 +40,11 @@
           "outMedia": {
             "eventName": "outMedia",
             "description": "picture taken",
+            "type": "all"
+          },
+          "status": {
+            "eventName": "status",
+            "description": "Return camera status (connected, stream address, last error, ...)",
             "type": "all"
           },
           "config": {

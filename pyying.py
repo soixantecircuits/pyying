@@ -96,6 +96,7 @@ class Pyying():
                   self.quit()
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
+          self.sendStatus()
           fullpath = self.getStreamPath()
           self.camera.capture_preview(fullpath)
 
@@ -174,6 +175,7 @@ class Pyying():
           self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
           self.spacebroClient.on(spacebroSettings.client['in'].getConfig.eventName, self.onGetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].setConfig.eventName, self.onSetConfig)
+          self.spacebroClient.on(spacebroSettings.client['in'].getStatus.eventName, self.onGetStatus)
           while not self.quit_pressed():
             self.spacebroClient.wait(3)
         except ConnectionError as e:
@@ -247,6 +249,20 @@ class Pyying():
         self.isShooting = True
         return
 
+    def onGetStatus(self, data):
+        self.sendStatus()
+
+    def sendStatus(self, error = 0):
+        print("spacebro get status")
+        data = {}
+        data['cameraNumber'] = self.settings.cameraNumber
+        data['stream'] = str(self.settings.service.mjpg_streamer.url)
+        data['connected'] = self.camera.initialized
+        data['lastError'] = str(error)
+        spacebroSettings = self.settings.service.spacebro
+        self.spacebroClient.emit(spacebroSettings.client['out'].status.eventName, data)
+        return
+
     def onGetConfig(self, data):
         print("spacebro get config")
         currentIsStreaming = self.isStreaming
@@ -265,8 +281,8 @@ class Pyying():
 
         self.isStreaming = currentIsStreaming
         if cfgmap:
-	  cfgmap['cameraNumber'] = self.settings.cameraNumber
-	  cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
+          cfgmap['cameraNumber'] = self.settings.cameraNumber
+          cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
         return
