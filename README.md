@@ -70,6 +70,17 @@ Optional arguments in data:
 This will influence the filename in the form `snap-myAlbumId-cameraNumber.jpg`  
 cameraNumber is an optional camera number defined in pyying settings.
 
+
+Command line options
+--------------------
+
+#### interval
+
+`python pyying.py --interval 15`
+
+Shoot a picture every 15s.  
+This is convenient to test running multiple instances in sync.
+
 Tests
 ------------
 

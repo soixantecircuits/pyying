@@ -122,6 +122,14 @@ class Pyying():
             if (not self.nowindow):
               clock.tick(25)
 
+            # repeat shoot
+            if (settings.interval):
+              r, s = divmod(time.time(),settings.interval) 
+              if (s < 0.01):
+                self.isShooting = True
+                self.media = {}
+                self.media['albumId'] = str(r)
+
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False

@@ -67,6 +67,7 @@
   "folder": {
     "output": "snaps",
     "stream": "/tmp/stream/"
-  }
+  },
+  "interval": false
 }
 
