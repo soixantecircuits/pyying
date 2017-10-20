@@ -23,6 +23,7 @@ from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
 from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
+import pexpect
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -94,11 +95,31 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.quit()
-          self.camera.init(settings.camera.port)
-          self.camera.leave_locked()
+
+          #self.cameraApp = "gphoto2-shell"
+          #self.cameraApp = "piggy-shell"
+          self.cameraApp = False
+          if not self.cameraApp:
+            self.camera.init(settings.camera.port)
+            #self.camera.leave_locked()
+          else: 
+            fullpath = os.path.join(self.snap_path, self.snap_filename + '-' + str(settings.cameraNumber) + '-%Y%m%d-%H%M%S' + '.' + self.snap_extension)
+            if self.cameraApp is "gphoto2-shell":
+              self.child = pexpect.spawn('gphoto2 --shell --port ' + str(settings.camera.port) + ' --filename ' + fullpath)
+            elif self.cameraApp is "piggy-shell":
+              self.child = pexpect.spawn('python shell.py --camera.port ' + str(settings.camera.port))
+            #self.child = pexpect.spawn('gphoto2 --shell --filename /home/pi/camera/photo-%Y%m%d-%H%M%S.jpg')
+            self.child.expect('gphoto2: {/opt/bin/pyying} />')
           self.sendStatus()
-          fullpath = self.getStreamPath()
-          self.camera.capture_preview(fullpath)
+          if not self.cameraApp:
+            fullpath = self.getStreamPath()
+            #self.camera.capture_preview(fullpath)
+            self.camera.capture_image(fullpath, delete=True)
+          else:
+            self.child.sendline('capture-image-and-download')
+            self.child.expect('gphoto2: {/opt/bin/pyying} />')
+            print self.child.before 
+
 
           # create window from first preview
           if (not self.nowindow):
@@ -122,6 +143,13 @@ class Pyying():
             if (not self.nowindow):
               clock.tick(25)
 
+            # shoot every 20s
+            r, s = divmod(time.time(),15) 
+            if (s < 0.01):
+              self.isShooting = True
+              self.media = {}
+              self.media['albumId'] = str(r)
+
             # Shoot picture
             if (self.isShooting):
               self.isShooting = False
@@ -134,7 +162,7 @@ class Pyying():
                   self.show(fullpath)
                 self.number += 1
             else:
-              time.sleep(0.0001) # avoid cpu > 100%
+              time.sleep(0.0005) # avoid cpu > 100%
 
           self.close()
 
@@ -145,14 +173,25 @@ class Pyying():
           self.close()
 
     def shoot(self):
-      print('Shoot received! ', time.time())
-      if 'albumId' in self.media:
-        fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
-      else:
-        fullpath = self.getSnapPath()
+      #print('Shoot received! ', time.time())
+      if not self.cameraApp:
+        if 'albumId' in self.media:
+          fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
+        else:
+          fullpath = self.getSnapPath()
 
       print('Shoot command! ', time.time())
-      self.camera.capture_image(fullpath, delete=True)
+      if not self.cameraApp:
+        self.camera.capture_image(fullpath, delete=True)
+      else:
+        self.child.sendline('capture-image-and-download')
+        self.child.expect('gphoto2: {/opt/bin/pyying} />')
+        print self.child.before 
+        #"Saving file as /opt/share/snaps/snap-04-20171016-183420.jpg"
+        matchObj = re.search( r'.*Saving file as (.*jpg)', self.child.before, re.MULTILINE)
+        if matchObj:
+         fullpath = matchObj.group(1)
+        print fullpath
       print('Shoot finished! ', time.time())
 
       # say it on spacebro
