@@ -98,7 +98,7 @@ class Pyying():
           self.camera.leave_locked()
           self.sendStatus()
           fullpath = self.getStreamPath()
-          self.camera.capture_preview(fullpath)
+          self.camera.capture_image(fullpath, delete=True)
 
           # create window from first preview
           if (not self.nowindow):
@@ -145,7 +145,7 @@ class Pyying():
           self.close()
 
     def shoot(self):
-      print('Shoot received! ', time.time())
+      #print('Shoot received! ', time.time())
       if 'albumId' in self.media:
         fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
       else:
