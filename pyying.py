@@ -317,6 +317,7 @@ class Pyying():
           time.sleep(0.01)
         print('finished set config')
         self.isStreaming = currentIsStreaming
+        self.onGetConfig(data)
 
     def getStreamPath(self):
       fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
