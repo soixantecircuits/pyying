@@ -6,7 +6,7 @@
 # * set standard port
 # * do not use OSC if pyOSC not installed
 
-import threading
+from threading import Thread, Lock
 import piggyphoto
 import os
 import sys
@@ -23,6 +23,8 @@ from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
 from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
+
+mutex = Lock()
 
 class Pyying():
     snap_path = 'snaps' # Don't forget to $ chown `whoami` this folder
@@ -58,16 +60,12 @@ class Pyying():
         self.oscServer.addDefaultHandlers()
         self.oscServer.addMsgHandler("/pyying/stream", self.stream_handler)
         self.oscServer.addMsgHandler("/pyying/shoot", self.shoot_handler)
-        self.oscThread = threading.Thread(target=self.oscServer.serve_forever)
+        self.oscThread = Thread(target=self.oscServer.serve_forever)
         self.oscThread.start()
         print("Starting OSCServer. Use ctrl-C to quit.")
 
-        # spacebro
-        self.spacebroThread = threading.Thread(target=self.startSpacebroClient)
-        self.spacebroThread.start()
-
         # static file server
-        self.staticFileServerThread = threading.Thread(target=self.startStaticFileServer)
+        self.staticFileServerThread = Thread(target=self.startStaticFileServer)
         self.staticFileServerThread.start()
 
         # TERM
@@ -96,9 +94,14 @@ class Pyying():
                   self.quit()
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
-          self.sendStatus()
           fullpath = self.getStreamPath()
           self.camera.capture_image(fullpath, delete=True)
+          
+          # spacebro
+          self.spacebroThread = Thread(target=self.startSpacebroClient)
+          self.spacebroThread.start()
+          # self.sendStatus()
+
 
           # create window from first preview
           if (not self.nowindow):
@@ -123,8 +126,8 @@ class Pyying():
               clock.tick(25)
 
             # repeat shoot
-            if (settings.interval):
-              r, s = divmod(time.time(),settings.interval) 
+            if (self.settings.interval):
+              r, s = divmod(time.time(), self.settings.interval) 
               if (s < 0.01):
                 self.isShooting = True
                 self.media = {}
@@ -152,6 +155,11 @@ class Pyying():
           print(str(e))
           self.close()
 
+    def checkLibGphoto2Error(self, e):
+      print(e)
+      if e.result is -1:
+        self.quit()
+
     def shoot(self):
       #print('Shoot received! ', time.time())
       if 'albumId' in self.media:
@@ -160,7 +168,14 @@ class Pyying():
         fullpath = self.getSnapPath()
 
       print('Shoot command! ', time.time())
-      self.camera.capture_image(fullpath, delete=True)
+      mutex.acquire()
+      try:
+        self.camera.capture_image(fullpath, delete=True)
+      except piggyphoto.libgphoto2error as e:
+        self.checkLibGphoto2Error(e)
+      finally:
+        time.sleep(1.5) # the firmware generates error if we ask for settings again too quickly
+        mutex.release()
       print('Shoot finished! ', time.time())
 
       # say it on spacebro
@@ -184,6 +199,8 @@ class Pyying():
           self.spacebroClient.on(spacebroSettings.client['in'].getConfig.eventName, self.onGetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].setConfig.eventName, self.onSetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].getStatus.eventName, self.onGetStatus)
+          self.spacebroClient.on(spacebroSettings.client['in'].setInterval.eventName, self.onSetInterval)
+          self.sendStatus()
           while not self.quit_pressed():
             self.spacebroClient.wait(3)
         except ConnectionError as e:
@@ -214,7 +231,8 @@ class Pyying():
         self.isClosing = True
         self.oscServer.close()
         self.oscThread.join()
-        self.spacebroThread.join()
+        if hasattr(self, 'spacebroThread'):
+          self.spacebroThread.join()
         self.httpd.shutdown()
         self.staticFileServerThread.join()
         try:
@@ -254,11 +272,15 @@ class Pyying():
     def onShoot(self, data):
         print("spacebro shoot")
         self.media = data
-        self.isShooting = True
+        # self.isShooting = True
+        self.shoot()
         return
 
     def onGetStatus(self, data):
         self.sendStatus()
+
+    def onSetInterval(self, data):
+        self.settings.interval = data["interval"]
 
     def sendStatus(self, error = 0):
         print("spacebro get status")
@@ -272,17 +294,26 @@ class Pyying():
         return
 
     def onGetConfig(self, data):
+        print("___________________")
         print("spacebro get config")
         currentIsStreaming = self.isStreaming
         self.isStreaming = False
         cfgmap = False
         retries = 100
+        #retries = 0
         for i in range(1 + retries):
+          mutex.acquire()
+          print("ask firmware the config")
           try:
             cfgmap = self.camera.get_map_config()
             break
           except piggyphoto.libgphoto2error as e:
-            print(str(e))
+            self.checkLibGphoto2Error(e)
+            if e.result is -1:
+              break
+          finally:
+            time.sleep(2) # the firmware generates error if we ask for settings again too quickly
+            mutex.release()
           time.sleep(0.01)
         self.isStreaming = True
         print('finished get config')
@@ -309,11 +340,17 @@ class Pyying():
         cfgmap.pop('_from')
         retries = 100
         for i in range(1 + retries):
+          mutex.acquire()
           try:
             self.camera.set_map_config(cfgmap)
             break
           except piggyphoto.libgphoto2error as e:
-            print(str(e))
+            self.checkLibGphoto2Error(e)
+            if e.result is -1:
+              break
+          finally:
+            time.sleep(2) # the firmware generates error if we set settings again too quickly
+            mutex.release()
           time.sleep(0.01)
         print('finished set config')
         self.isStreaming = currentIsStreaming

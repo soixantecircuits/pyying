@@ -34,6 +34,11 @@
             "eventName": "setConfig",
             "description": "Set camera config (aperture, shutter speed, serial number, ...)",
             "type": "all"
+          },
+          "setInterval": {
+            "eventName": "setInterval",
+            "description": "Set interval for shooting repeatedly",
+            "type": "all"
           }
         },
         "out": {
