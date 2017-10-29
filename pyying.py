@@ -23,6 +23,9 @@ from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
 from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
+import socket
+import sys
+import json
 
 mutex = Lock()
 
@@ -102,6 +105,9 @@ class Pyying():
           self.spacebroThread.start()
           # self.sendStatus()
 
+          # lightningbro
+          self.lightningbroThread = Thread(target=self.startLightningbroClient)
+          self.lightningbroThread.start()
 
           # create window from first preview
           if (not self.nowindow):
@@ -190,12 +196,33 @@ class Pyying():
       # clear
       self.media = {}
 
+    def startLightningbroClient(self):
+      self.lightningbroSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      self.lightningbroSock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+      # Bind the socket to the port
+      server_address = (str(settings.service.lightningbro.host), int(settings.server.port) + 1)
+      print >>sys.stderr, 'starting lightningbroClient on %s port %s' % server_address
+      self.lightningbroSock.bind(server_address)
+      while not self.quit_pressed():
+        message, address = self.lightningbroSock.recvfrom(4096)
+        #print >>sys.stderr, 'received %s bytes from %s' % (len(message), address)
+        #print >>sys.stderr, message
+        #if message == "stop":
+        #  return
+        try:
+          data = json.loads(message)
+          #print('data: ' + str(data))
+          self.onShoot(data)
+        except ValueError as e:
+          print(e)
+      return
+
     def startSpacebroClient(self):
       spacebroSettings = self.settings.service.spacebro
       while not self.quit_pressed():
         try:
           self.spacebroClient = SpacebroClient(spacebroSettings.toDict(), wait_for_connection=False)
-          self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+          #self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
           self.spacebroClient.on(spacebroSettings.client['in'].getConfig.eventName, self.onGetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].setConfig.eventName, self.onSetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].getStatus.eventName, self.onGetStatus)
@@ -233,6 +260,13 @@ class Pyying():
         self.oscThread.join()
         if hasattr(self, 'spacebroThread'):
           self.spacebroThread.join()
+        if hasattr(self, 'lightningbroThread'):
+          if hasattr(self, 'lightningbroSock'):
+            #self.lightningbroSock.shutdown()
+            server_address = (str(settings.service.lightningbro.host), int(settings.server.port) + 1)
+            self.lightningbroSock.sendto("stop", server_address)
+            self.lightningbroSock.close()
+          self.lightningbroThread.join()
         self.httpd.shutdown()
         self.staticFileServerThread.join()
         try:
