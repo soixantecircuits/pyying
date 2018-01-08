@@ -91,7 +91,7 @@ class Pyying():
                   settings.camera.port = 'usb:{0},{1}'.format(device['BUSNUM'], device['DEVNUM'])
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
-                  self.quit()
+                  self.close()
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
