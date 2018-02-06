@@ -95,6 +95,7 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
+          print 'init camera'
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
           fullpath = self.getStreamPath()
@@ -333,7 +334,7 @@ class Pyying():
         currentIsStreaming = self.isStreaming
         self.isStreaming = False
         cfgmap = False
-        retries = 100
+        retries = 5
         #retries = 0
         for i in range(1 + retries):
           mutex.acquire()
