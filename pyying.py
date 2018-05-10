@@ -6,6 +6,7 @@
 # * set standard port
 # * do not use OSC if pyOSC not installed
 
+from __future__ import print_function
 from threading import Thread, Lock
 import piggyphoto
 import os
@@ -23,6 +24,9 @@ from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
 from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
+
+import logging
+import gphoto2 as gp
 
 mutex = Lock()
 
@@ -80,7 +84,8 @@ class Pyying():
           self.find_last_number_in_directory()
 
           # camera
-          self.camera = piggyphoto.camera(False)
+          #self.camera = piggyphoto.camera(False)
+
           if settings.camera.port:
               settings.camera.port = str(settings.camera.port)
           elif settings.camera.devpath:
@@ -92,11 +97,15 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
-          print 'init camera'
-          self.camera.init(settings.camera.port)
-          self.camera.leave_locked()
+          print('init camera')
+          logging.basicConfig(
+            format='%(levelname)s: %(name)s: %(message)s', level=logging.WARNING)
+          gp.check_result(gp.use_python_logging())
+          self.camera = gp.check_result(gp.gp_camera_new())
+          #self.camera.init(settings.camera.port)
+          #self.camera.leave_locked()
           fullpath = self.getStreamPath()
-          self.camera.capture_image(fullpath, delete=True)
+          #self.camera.capture_image(fullpath, delete=True)
           
           # spacebro
           self.spacebroThread = Thread(target=self.startSpacebroClient)
@@ -141,7 +150,9 @@ class Pyying():
             # Stream pictures
             if (self.isStreaming):
                 fullpath = self.getStreamPath()
-                self.camera.capture_preview(fullpath)
+                #self.camera.capture_preview(fullpath)
+                camera_file = gp.check_result(gp.gp_camera_capture_preview(self.camera))
+                gp.check_result(gp.gp_file_save(camera_file, fullpath))
                 if (not self.nowindow):
                   self.show(fullpath)
                 self.number += 1
@@ -158,7 +169,7 @@ class Pyying():
 
     def checkLibGphoto2Error(self, e):
       print(e)
-      if e.result is -1:
+      if e.code is -1:
         self.quit()
 
     def shoot(self):
@@ -171,8 +182,25 @@ class Pyying():
       print('Shoot command! ', time.time())
       mutex.acquire()
       try:
-        self.camera.capture_image(fullpath, delete=True)
-      except piggyphoto.libgphoto2error as e:
+        #self.camera.capture_image(fullpath, delete=True)
+        retries = 5
+        file_path = False
+        for i in range(1 + retries):
+            try: 
+                print('Shoot capture! ', time.time())
+                file_path = gp.check_result(gp.gp_camera_capture(self.camera, gp.GP_CAPTURE_IMAGE))
+                print('Shoot capture finished! ', time.time())
+                break
+            except gp.GPhoto2Error as e:
+              print(e)
+              print("capture_image(%s) retry #%d..." % (fullpath, i))
+              time.sleep(1.5)
+        if (file_path):
+            camera_file = gp.check_result(gp.gp_camera_file_get(
+                    self.camera, file_path.folder, file_path.name, gp.GP_FILE_TYPE_NORMAL))
+            gp.check_result(gp.gp_file_save(camera_file, fullpath))
+      #except piggyphoto.libgphoto2error as e:
+      except gp.GPhoto2Error as e:
         self.checkLibGphoto2Error(e)
       finally:
         time.sleep(1.5) # the firmware generates error if we ask for settings again too quickly
@@ -237,7 +265,8 @@ class Pyying():
         self.httpd.shutdown()
         self.staticFileServerThread.join()
         try:
-          self.camera.leave_locked()
+          #self.camera.leave_locked()
+          gp.check_result(gp.gp_camera_exit(self.camera))
         except AttributeError:
           pass
         print("Have a good day!")
@@ -273,8 +302,8 @@ class Pyying():
     def onShoot(self, data):
         print("spacebro shoot")
         self.media = data
-        # self.isShooting = True
-        self.shoot()
+        self.isShooting = True
+        #self.shoot()
         return
 
     def onGetStatus(self, data):
@@ -288,7 +317,7 @@ class Pyying():
         data = {}
         data['cameraNumber'] = self.settings.cameraNumber
         data['stream'] = str(self.settings.service.mjpg_streamer.url)
-        data['connected'] = self.camera.initialized
+        # TODO: data['connected'] = self.camera.initialized
         data['lastError'] = str(error)
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].status.eventName, data)
@@ -310,7 +339,7 @@ class Pyying():
             break
           except piggyphoto.libgphoto2error as e:
             self.checkLibGphoto2Error(e)
-            if e.result is -1:
+            if e.code is -1:
               break
           finally:
             time.sleep(2) # the firmware generates error if we ask for settings again too quickly
