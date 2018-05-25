@@ -95,6 +95,7 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
+                  return
           print 'init camera'
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
@@ -169,10 +170,14 @@ class Pyying():
 
     def shoot(self):
       #print('Shoot received! ', time.time())
+      cameraNumber = str(self.settings.cameraNumber)
       if 'albumId' in self.media:
-        fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
+        fullpath = self.getSnapPath(self.media['albumId'], cameraNumber)
       else:
         fullpath = self.getSnapPath()
+
+      if 'frameDelays' in self.media and cameraNumber in self.media['frameDelays']:
+        time.sleep(int(self.media['frameDelays'][cameraNumber])/1000.0)
 
       print('Shoot command! ', time.time())
       mutex.acquire()
