@@ -26,6 +26,7 @@ from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
 import socket
 import sys
 import json
+import netifaces
 
 mutex = Lock()
 
@@ -39,6 +40,7 @@ class Pyying():
     number = 0
     snap_number = 0
     media = {}
+    macAddress = ''
 
     oscServer = None
     oscThread = None
@@ -74,7 +76,15 @@ class Pyying():
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
 
+
         try:
+          # MAC Address
+          try:
+            self.macAddress = netifaces.ifaddresses('eth0')[netifaces.AF_LINK][0]['addr']
+          except ValueError as e:
+            print(e)
+          print('mac address: ' + self.macAddress)
+
           # check folders exist
           if not os.path.exists(self.stream_path):
                 os.makedirs(self.stream_path)
@@ -95,6 +105,7 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
+                  return
           print 'init camera'
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
@@ -320,6 +331,7 @@ class Pyying():
     def sendStatus(self, error = 0):
         print("spacebro get status")
         data = {}
+        data['macAddress'] = self.macAddress
         data['cameraNumber'] = self.settings.cameraNumber
         data['stream'] = str(self.settings.service.mjpg_streamer.url)
         data['connected'] = self.camera.initialized
