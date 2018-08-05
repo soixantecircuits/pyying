@@ -314,9 +314,9 @@ class camera(object):
 
         ans = 0
         for i in range(1 + retries):
-            print('Shoot capture! ', time.time())
+            #print('Shoot capture! ', time.time())
             ans = gp.gp_camera_capture(self._cam, GP_CAPTURE_IMAGE, PTR(path), context)
-            print('Shoot capture finished! ', time.time())
+            #print('Shoot capture finished! ', time.time())
             if ans == 0: break
             else: print "capture_image(%s) retry #%d..." % (destpath, i)
         check(ans)
