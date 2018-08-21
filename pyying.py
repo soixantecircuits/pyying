@@ -186,8 +186,10 @@ class Pyying():
       else:
         fullpath = self.getSnapPath()
 
-      if 'frameDelays' in self.media and cameraNumber in self.media['frameDelays']:
-        time.sleep(int(self.media['frameDelays'][cameraNumber])/1000.0)
+      if 'meta' in self.media and 'frameDelays' in self.media['meta'] and self.macAddress in self.media['meta']['frameDelays'] and cameraNumber in self.media['meta']['frameDelays'][self.macAddress]:
+        sleepDuration = int(self.media['meta']['frameDelays'][self.macAddress][cameraNumber])/1000.0
+        print('Sleep for frameDelay for', sleepDuration)
+        time.sleep(sleepDuration)
 
       print('Shoot command! ', time.time())
       mutex.acquire()
@@ -206,6 +208,7 @@ class Pyying():
       self.media['url'] = "http://" + self.settings.server.host + ":" + str(self.settings.server.port) \
                         + "/" + self.media['file']
       self.media['cameraNumber'] = self.settings.cameraNumber
+      self.media['macAddress'] = self.macAddress
       spacebroSettings = self.settings.service.spacebro
       self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
 
