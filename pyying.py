@@ -36,6 +36,7 @@ class Pyying():
     number = 0
     snap_number = 0
     media = {}
+    shootQueue = []
 
     oscServer = None
     oscThread = None
@@ -136,7 +137,6 @@ class Pyying():
 
             # Shoot picture
             if (self.isShooting):
-              self.isShooting = False
               self.shoot()
             # Stream pictures
             if (self.isStreaming):
@@ -190,6 +190,12 @@ class Pyying():
 
       # clear
       self.media = {}
+      self.isShooting = False
+      # shoot again if queue
+      if (len(self.shootQueue) > 0):
+          self.media = self.shootQueue.pop(0)
+          self.isShooting = True
+
 
     def startSpacebroClient(self):
       spacebroSettings = self.settings.service.spacebro
@@ -270,11 +276,14 @@ class Pyying():
         self.isShooting = True
         return
 
-    def onShoot(self, data):
+    def onShoot(self, data, callback = 0):
         print("spacebro shoot")
-        self.media = data
-        # self.isShooting = True
-        self.shoot()
+        if not self.isShooting:
+            self.media = data
+            self.isShooting = True
+        else:
+            self.shootQueue.append(data)
+        #self.shoot()
         return
 
     def onGetStatus(self, data):
@@ -359,6 +368,7 @@ class Pyying():
 
     def getStreamPath(self):
       fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
+      #fullpath = "/tmp/fifo.mjpg"
       return fullpath
 
     def getSnapPath(self, albumId=-1, cameraNumber='01'):
