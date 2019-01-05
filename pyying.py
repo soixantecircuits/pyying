@@ -23,6 +23,10 @@ from pyStandardSettings import settings
 from pySpacebroClient import SpacebroClient
 from socketIO_client_nexus.exceptions import ConnectionError
 from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
+import socket
+import sys
+import json
+import netifaces
 
 mutex = Lock()
 
@@ -37,6 +41,7 @@ class Pyying():
     snap_number = 0
     media = {}
     shootQueue = []
+    macAddress = ''
 
     oscServer = None
     oscThread = None
@@ -72,7 +77,15 @@ class Pyying():
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
 
+
         try:
+          # MAC Address
+          try:
+            self.macAddress = netifaces.ifaddresses('eth0')[netifaces.AF_LINK][0]['addr']
+          except ValueError as e:
+            print(e)
+          print('mac address: ' + self.macAddress)
+
           # check folders exist
           if not os.path.exists(self.stream_path):
                 os.makedirs(self.stream_path)
@@ -93,6 +106,7 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
+                  return
           print 'init camera'
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
@@ -100,10 +114,15 @@ class Pyying():
           self.camera.capture_image(fullpath, delete=True)
           
           # spacebro
-          self.spacebroThread = Thread(target=self.startSpacebroClient)
-          self.spacebroThread.start()
-          # self.sendStatus()
+          if settings.service.spacebro.enabled:
+              self.spacebroThread = Thread(target=self.startSpacebroClient)
+              self.spacebroThread.start()
+              # self.sendStatus()
 
+          # lightningbro
+          if settings.service.lightningbro.enabled:
+              self.lightningbroThread = Thread(target=self.startLightningbroClient)
+              self.lightningbroThread.start()
 
           # create window from first preview
           if (not self.nowindow):
@@ -163,10 +182,16 @@ class Pyying():
 
     def shoot(self):
       #print('Shoot received! ', time.time())
+      cameraNumber = str(self.settings.cameraNumber)
       if 'albumId' in self.media:
-        fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
+        fullpath = self.getSnapPath(self.media['albumId'], cameraNumber)
       else:
         fullpath = self.getSnapPath()
+
+      if 'meta' in self.media and 'frameDelays' in self.media['meta'] and self.macAddress in self.media['meta']['frameDelays'] and cameraNumber in self.media['meta']['frameDelays'][self.macAddress]:
+        sleepDuration = int(self.media['meta']['frameDelays'][self.macAddress][cameraNumber])/1000.0
+        print('Sleep for frameDelay for', sleepDuration)
+        time.sleep(sleepDuration)
 
       print('Shoot command! ', time.time())
       mutex.acquire()
@@ -185,6 +210,7 @@ class Pyying():
       self.media['url'] = "http://" + self.settings.server.host + ":" + str(self.settings.server.port) \
                         + "/" + self.media['file']
       self.media['cameraNumber'] = self.settings.cameraNumber
+      self.media['macAddress'] = self.macAddress
       spacebroSettings = self.settings.service.spacebro
       self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
 
@@ -196,6 +222,27 @@ class Pyying():
           self.media = self.shootQueue.pop(0)
           self.isShooting = True
 
+
+    def startLightningbroClient(self):
+      self.lightningbroSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+      self.lightningbroSock.setsockopt(socket.SOL_SOCKET, socket.SO_BROADCAST, 1)
+      # Bind the socket to the port
+      server_address = (str(settings.service.lightningbro.host), int(settings.server.port) + 1)
+      print >>sys.stderr, 'starting lightningbroClient on %s port %s' % server_address
+      self.lightningbroSock.bind(server_address)
+      while not self.quit_pressed():
+        message, address = self.lightningbroSock.recvfrom(4096)
+        #print >>sys.stderr, 'received %s bytes from %s' % (len(message), address)
+        #print >>sys.stderr, message
+        #if message == "stop":
+        #  return
+        try:
+          data = json.loads(message)
+          #print('data: ' + str(data))
+          self.onShoot(data)
+        except ValueError as e:
+          print(e)
+      return
 
     def startSpacebroClient(self):
       spacebroSettings = self.settings.service.spacebro
@@ -240,6 +287,13 @@ class Pyying():
         self.oscThread.join()
         if hasattr(self, 'spacebroThread'):
           self.spacebroThread.join()
+        if hasattr(self, 'lightningbroThread'):
+          if hasattr(self, 'lightningbroSock'):
+            #self.lightningbroSock.shutdown()
+            server_address = (str(settings.service.lightningbro.host), int(settings.server.port) + 1)
+            self.lightningbroSock.sendto("stop", server_address)
+            self.lightningbroSock.close()
+          self.lightningbroThread.join()
         self.httpd.shutdown()
         self.staticFileServerThread.join()
         try:
@@ -295,6 +349,7 @@ class Pyying():
     def sendStatus(self, error = 0):
         print("spacebro get status")
         data = {}
+        data['macAddress'] = self.macAddress
         data['cameraNumber'] = self.settings.cameraNumber
         data['stream'] = str(self.settings.service.mjpg_streamer.url)
         data['connected'] = self.camera.initialized
