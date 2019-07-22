@@ -26,6 +26,7 @@ from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
 import socket
 import sys
 import json
+from netifaces import interfaces, ifaddresses, AF_INET
 
 mutex = Lock()
 
@@ -95,6 +96,7 @@ class Pyying():
               except pyudev.device._errors.DeviceNotFoundAtPathError as e:
                   print('devpath not found', settings.camera.devpath)
                   self.close()
+                  return
           print 'init camera'
           self.camera.init(settings.camera.port)
           self.camera.leave_locked()
@@ -188,7 +190,10 @@ class Pyying():
       # say it on spacebro
       self.media['path'] = os.path.abspath(fullpath)
       self.media['file'] = os.path.basename(fullpath)
-      self.media['url'] = "http://" + self.settings.server.host + ":" + str(self.settings.server.port) \
+      hostname = self.settings.server.host 
+      if not hostname:
+        hostname = [i['addr'] for i in ifaddresses('eth0').setdefault(AF_INET, [{'addr':u'10.60.60.1'}] )][0]
+      self.media['url'] = "http://" + hostname + ":" + str(self.settings.server.port) \
                         + "/" + self.media['file']
       self.media['cameraNumber'] = self.settings.cameraNumber
       spacebroSettings = self.settings.service.spacebro
@@ -420,7 +425,10 @@ def main(argv):
   settings = DotMap(pyStandardSettings.getSettings())
   if (not settings.nowindow):
     import pygame
-  ying = Pyying(host=settings.server.host, port=settings.server.port, nowindow=settings.nowindow)
+  hostname = settings.server.host 
+  if not hostname:
+    hostname = [i['addr'] for i in ifaddresses('eth0').setdefault(AF_INET, [{'addr':u'10.60.60.1'}] )][0]
+  ying = Pyying(host=hostname, port=settings.server.port, nowindow=settings.nowindow)
   ying.start()
 
 if __name__ == '__main__':
