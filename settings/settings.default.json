@@ -8,10 +8,12 @@
       "url": "http://localhost:36700/?action=stream"
     },
     "lightningbro": {
+      "enabled": false,
       "host": "10.60.60.255",
       "port": 36666
     },
     "spacebro": {
+      "enabled": true,
       "host": "spacebro.space",
       "port": 3333,
       "channelName": "media-stream",

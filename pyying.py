@@ -26,7 +26,7 @@ from RootedHTTPServer import RootedHTTPServer, RootedHTTPRequestHandler
 import socket
 import sys
 import json
-from netifaces import interfaces, ifaddresses, AF_INET
+from netifaces import interfaces, ifaddresses, AF_INET, AF_LINK
 
 mutex = Lock()
 
@@ -40,6 +40,8 @@ class Pyying():
     number = 0
     snap_number = 0
     media = {}
+    shootQueue = []
+    macAddress = ''
 
     oscServer = None
     oscThread = None
@@ -75,7 +77,15 @@ class Pyying():
         # TERM
         signal.signal(signal.SIGTERM, self.sigclose)
 
+
         try:
+          # MAC Address
+          try:
+            self.macAddress = ifaddresses('eth0')[AF_LINK][0]['addr']
+          except ValueError as e:
+            print(e)
+          print('mac address: ' + self.macAddress)
+
           # check folders exist
           if not os.path.exists(self.stream_path):
                 os.makedirs(self.stream_path)
@@ -104,13 +114,15 @@ class Pyying():
           self.camera.capture_image(fullpath, delete=True)
           
           # spacebro
-          self.spacebroThread = Thread(target=self.startSpacebroClient)
-          self.spacebroThread.start()
-          # self.sendStatus()
+          if settings.service.spacebro.enabled:
+              self.spacebroThread = Thread(target=self.startSpacebroClient)
+              self.spacebroThread.start()
+              # self.sendStatus()
 
           # lightningbro
-          self.lightningbroThread = Thread(target=self.startLightningbroClient)
-          self.lightningbroThread.start()
+          if settings.service.lightningbro.enabled:
+              self.lightningbroThread = Thread(target=self.startLightningbroClient)
+              self.lightningbroThread.start()
 
           # create window from first preview
           if (not self.nowindow):
@@ -144,7 +156,6 @@ class Pyying():
 
             # Shoot picture
             if (self.isShooting):
-              self.isShooting = False
               self.shoot()
             # Stream pictures
             if (self.isStreaming):
@@ -171,10 +182,16 @@ class Pyying():
 
     def shoot(self):
       #print('Shoot received! ', time.time())
+      cameraNumber = str(self.settings.cameraNumber)
       if 'albumId' in self.media:
-        fullpath = self.getSnapPath(self.media['albumId'], str(self.settings.cameraNumber))
+        fullpath = self.getSnapPath(self.media['albumId'], cameraNumber)
       else:
         fullpath = self.getSnapPath()
+
+      if 'meta' in self.media and 'frameDelays' in self.media['meta'] and self.macAddress in self.media['meta']['frameDelays'] and cameraNumber in self.media['meta']['frameDelays'][self.macAddress]:
+        sleepDuration = int(self.media['meta']['frameDelays'][self.macAddress][cameraNumber])/1000.0
+        print('Sleep for frameDelay for', sleepDuration)
+        time.sleep(sleepDuration)
 
       print('Shoot command! ', time.time())
       mutex.acquire()
@@ -196,11 +213,18 @@ class Pyying():
       self.media['url'] = "http://" + hostname + ":" + str(self.settings.server.port) \
                         + "/" + self.media['file']
       self.media['cameraNumber'] = self.settings.cameraNumber
+      self.media['macAddress'] = self.macAddress
       spacebroSettings = self.settings.service.spacebro
       self.spacebroClient.emit(spacebroSettings.client['out'].outMedia.eventName, self.media)
 
       # clear
       self.media = {}
+      self.isShooting = False
+      # shoot again if queue
+      if (len(self.shootQueue) > 0):
+          self.media = self.shootQueue.pop(0)
+          self.isShooting = True
+
 
     def startLightningbroClient(self):
       self.lightningbroSock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -228,7 +252,7 @@ class Pyying():
       while not self.quit_pressed():
         try:
           self.spacebroClient = SpacebroClient(spacebroSettings.toDict(), wait_for_connection=False)
-          #self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
+          self.spacebroClient.on(spacebroSettings.client['in'].shoot.eventName, self.onShoot)
           self.spacebroClient.on(spacebroSettings.client['in'].getConfig.eventName, self.onGetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].setConfig.eventName, self.onSetConfig)
           self.spacebroClient.on(spacebroSettings.client['in'].getStatus.eventName, self.onGetStatus)
@@ -246,11 +270,10 @@ class Pyying():
     def startStaticFileServer(self):
       server_address = ('', self.settings['server']['port'])
       self.httpd = RootedHTTPServer(self.settings['folder']['output'], server_address, RootedHTTPRequestHandler)
-
-      sa = self.httpd.socket.getsockname()
-      if str(self.settings.server.host) is "":
-        self.settings.server.host = sa[0]
-      print("Serving folder '" + self.settings.folder.output + "' on " + self.settings.server.host + ":" + str(sa[1]) + " ...")
+      hostname = settings.server.host 
+      if not hostname:
+        hostname = [i['addr'] for i in ifaddresses('eth0').setdefault(AF_INET, [{'addr':u'10.60.60.1'}] )][0]
+      print("Serving folder '" + self.settings.folder.output + "' on " + hostname + ":" + str(settings.server.port) + " ...")
       self.httpd.serve_forever()
 
     def sigclose(self, signum, frame):
@@ -309,11 +332,14 @@ class Pyying():
         self.isShooting = True
         return
 
-    def onShoot(self, data):
+    def onShoot(self, data, callback = 0):
         print("spacebro shoot")
-        self.media = data
-        # self.isShooting = True
-        self.shoot()
+        if not self.isShooting:
+            self.media = data
+            self.isShooting = True
+        else:
+            self.shootQueue.append(data)
+        #self.shoot()
         return
 
     def onGetStatus(self, data):
@@ -325,6 +351,7 @@ class Pyying():
     def sendStatus(self, error = 0):
         print("spacebro get status")
         data = {}
+        data['macAddress'] = self.macAddress
         data['cameraNumber'] = self.settings.cameraNumber
         data['stream'] = str(self.settings.service.mjpg_streamer.url)
         data['connected'] = self.camera.initialized
@@ -398,6 +425,7 @@ class Pyying():
 
     def getStreamPath(self):
       fullpath = os.path.join(self.stream_path, self.stream_filename + ("%05d" % self.number) + '.' + self.stream_extension)
+      #fullpath = "/tmp/fifo.mjpg"
       return fullpath
 
     def getSnapPath(self, albumId=-1, cameraNumber='01'):
