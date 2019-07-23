@@ -389,6 +389,7 @@ class Pyying():
         if cfgmap:
           cfgmap['cameraNumber'] = self.settings.cameraNumber
           cfgmap['stream'] = str(self.settings.service.mjpg_streamer.url)
+          cfgmap['macAddress'] = self.macAddress
         spacebroSettings = self.settings.service.spacebro
         self.spacebroClient.emit(spacebroSettings.client['out'].config.eventName, cfgmap)
         return
