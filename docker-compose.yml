@@ -1,0 +1,12 @@
+version: "3"
+services:
+  pyying:
+      build: .
+      restart: always
+      container_name: pyying_service
+      ports:
+        - "8087:8080"
+        - "8010:8010"
+      volumes:
+        - ./settings:/app/settings
+        - ./snaps:/app/snaps
