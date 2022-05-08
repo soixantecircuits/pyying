@@ -89,3 +89,16 @@ Run tests with
 ```
 python -m tests.test
 ```
+
+## How to build docker images
+it's mandatory to use:
+```
+COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1 docker-compose build
+```
+
+## How to disable `gvfs-gphoto2-volume-monitor`
+In order to release the photo camera you need to disable, stop and mask service `gvfs-gphoto2-volume-monitor.service`
+```
+systemctl --user disable gvfs-gphoto2-volume-monitor.service
+systemctl --user mask gvfs-gphoto2-volume-monitor.service
+```

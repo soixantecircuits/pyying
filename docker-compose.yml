@@ -1,12 +1,38 @@
 version: "3"
 services:
   pyying:
-      build: .
-      restart: always
-      container_name: pyying_service
-      ports:
-        - "8087:8080"
-        - "8010:8010"
-      volumes:
-        - ./settings:/app/settings
-        - ./snaps:/app/snaps
+    privileged: true
+    build: .
+    restart: always
+    container_name: pyying
+    hostname: pyying
+    ports:
+      - 8087:8080
+      - 8010:8010
+    volumes:
+      - ./settings:/app/settings
+      - ./snaps:/app/snaps
+      - /dev/bus/usb/:/dev/bus/usb
+      - tmp_stream:/tmp/stream
+    # devices:
+    #   - /dev:/dev
+  
+  mjpg_streamer:
+    build:
+      context: .
+      dockerfile: mjpg_streamer.dockerfile
+    restart: always
+    container_name: mjpg_streamer
+    hostname: mjpg-streamer
+    user: 0:0
+    ports:
+      - 36700:36700/tcp
+    volumes:
+      - tmp_stream:/tmp/stream
+
+volumes:
+  tmp_stream:
+    driver_opts:
+      type: none
+      device: ./tmp_stream
+      o: bind
